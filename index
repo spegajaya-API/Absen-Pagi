@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Presensi Online</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 font-sans">
+
+  <!-- NAVBAR / HEADER -->
+  <header class="bg-blue-600 text-white shadow-md no-print">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-2">
+      <div>
+        <h1 id="namaSekolah" class="text-2xl font-bold flex items-center gap-2">
+          <i class="fa-solid fa-school"></i> Memuat Sekolah...
+        </h1>
+        <p id="deskripsiApp" class="text-sm text-blue-100">Memuat Deskripsi...</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="openRekapModal()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition shadow flex items-center gap-2">
+          <i class="fa-solid fa-print"></i> Rekap Bulanan
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTAINER UTAMA -->
+  <main class="max-w-7xl mx-auto px-4 py-6 no-print">
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border-l-4 border-blue-500 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <span class="text-xs font-semibold uppercase tracking-wider text-gray-500">Tanggal Hari Ini</span>
+        <h2 id="currentDateStr" class="text-lg font-bold text-gray-800">--</h2>
+      </div>
+      <div id="kelasInfo" class="hidden bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full font-medium text-sm">
+        Kelas Dipilih: <span id="selectedKelasLabel" class="font-bold">--</span>
+      </div>
+    </div>
+
+    <!-- NAVIGASI KELAS -->
+    <section class="mb-6">
+      <h3 class="text-sm font-semibold text-gray-600 mb-2 uppercase tracking-wide">Pilih Navigasi Kelas:</h3>
+      <div id="kelasContainer" class="flex flex-wrap gap-2">
+        <div class="animate-pulse bg-gray-300 h-10 w-24 rounded-lg"></div>
+      </div>
+    </section>
+
+    <!-- DAFTAR SISWA -->
+    <section id="siswaSection" class="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-gray-200">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+          <i class="fa-solid fa-users text-blue-600"></i> Daftar Siswa
+        </h3>
+        <span id="totalSiswaText" class="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">0 Siswa</span>
+      </div>
+
+      <div id="emptyState" class="text-center py-12 text-gray-400">
+        <i class="fa-solid fa-arrow-up text-4xl mb-3 animate-bounce"></i>
+        <p class="text-base font-medium">Silakan pilih tombol kelas di atas untuk menampilkan daftar siswa.</p>
+      </div>
+
+      <div id="loadingState" class="hidden text-center py-12 text-blue-600">
+        <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-3"></i>
+        <p class="text-sm font-medium">Memuat data siswa & status presensi...</p>
+      </div>
+
+      <div id="siswaListContainer" class="hidden overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 text-xs font-semibold uppercase">
+              <th class="py-3 px-4">No</th>
+              <th class="py-3 px-4">ID Siswa</th>
+              <th class="py-3 px-4">Nama Siswa</th>
+              <th class="py-3 px-4">Jam Absen</th>
+              <th class="py-3 px-4 text-center">Aksi / Status Absen</th>
+            </tr>
+          </thead>
+          <tbody id="siswaTbody" class="divide-y divide-gray-100 text-sm"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL REKAP BULANAN -->
+  <div id="rekapModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center no-print">
+        <h3 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-file-invoice text-yellow-500"></i> Rekapitulasi Bulanan</h3>
+        <button onclick="closeRekapModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+
+      <div class="p-4 border-b border-gray-100 bg-white grid grid-cols-1 md:grid-cols-3 gap-3 no-print">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Bulan</label>
+          <select id="rekapBulan" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+            <option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option>
+            <option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option>
+            <option value="7">Juli</option><option value="8">Agustus</option><option value="9">September</option>
+            <option value="10">Oktober</option><option value="11">November</option><option value="12">Desember</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Tahun</label>
+          <input type="number" id="rekapTahun" class="w-full border border-gray-300 rounded-lg p-2 text-sm" value="2026">
+        </div>
+        <div class="flex items-end gap-2">
+          <button onclick="loadRekapData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm w-full">Tampilkan</button>
+          <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg text-sm flex items-center gap-1"><i class="fa-solid fa-print"></i> Cetak</button>
+        </div>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex-1 bg-white" id="printArea">
+        <div class="text-center mb-6 hidden print:block">
+          <h2 id="printNamaSekolah" class="text-xl font-bold text-gray-900">--</h2>
+          <p id="printPeriode" class="text-sm text-gray-600">Laporan Rekapitulasi Presensi Siswa</p>
+          <hr class="my-3 border-gray-300">
+        </div>
+
+        <div id="rekapLoading" class="hidden text-center py-8 text-blue-600 no-print">
+          <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-2"></i>
+          <p class="text-xs">Mengambil data rekap...</p>
+        </div>
+
+        <table class="w-full text-left border-collapse border border-gray-300 text-xs md:text-sm">
+          <thead>
+            <tr class="bg-gray-100 text-gray-700 border-b border-gray-300 font-bold">
+              <th class="p-2 border border-gray-300">No</th>
+              <th class="p-2 border border-gray-300">ID Siswa</th>
+              <th class="p-2 border border-gray-300">Nama Siswa</th>
+              <th class="p-2 border border-gray-300">Kelas</th>
+              <th class="p-2 border border-gray-300 text-center">Tepat Waktu</th>
+              <th class="p-2 border border-gray-300 text-center">Terlambat</th>
+              <th class="p-2 border border-gray-300 text-center">Bolos</th>
+              <th class="p-2 border border-gray-300 text-center">Total Hadir</th>
+            </tr>
+          </thead>
+          <tbody id="rekapTbody" class="divide-y divide-gray-200">
+            <tr><td colspan="8" class="text-center p-4 text-gray-400">Pilih Bulan & Tahun lalu klik Tampilkan.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // =========================================================================
+    // TEMPELKAN URL APPS SCRIPT WEB APP (AKHIRAN /exec) DI SINI:
+    // =========================================================================
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwrdq7gPPy7uZ4ulXbg7xSYGX8kRKDzLZC0_C4TzdviSKZs0xWsccQlucmuX6rjr099og/exec";
+
+    let activeKelas = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('currentDateStr').innerText = new Date().toLocaleDateString('id-ID', options);
+      document.getElementById('rekapTahun').value = new Date().getFullYear();
+      document.getElementById('rekapBulan').value = new Date().getMonth() + 1;
+
+      fetchInitialData();
+    });
+
+    function fetchInitialData() {
+      fetch(`${GAS_API_URL}?action=getInitialData`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.success) {
+            document.getElementById('namaSekolah').innerText = res.namaSekolah;
+            document.getElementById('printNamaSekolah').innerText = res.namaSekolah;
+            document.getElementById('deskripsiApp').innerText = res.deskripsiApp;
+            renderKelasButtons(res.listKelas);
+          } else {
+            Swal.fire('Error', res.message, 'error');
+          }
+        })
+        .catch(err => Swal.fire('Error System', 'Gagal terhubung ke Apps Script: ' + err.toString(), 'error'));
+    }
+
+    function renderKelasButtons(listKelas) {
+      const container = document.getElementById('kelasContainer');
+      container.innerHTML = '';
+      listKelas.forEach(kelas => {
+        const btn = document.createElement('button');
+        btn.className = `btn-kelas bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 font-semibold px-4 py-2 rounded-lg text-sm transition shadow-sm`;
+        btn.innerText = `Kelas ${kelas}`;
+        btn.onclick = () => selectKelas(kelas, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectKelas(namaKelas, btnElement) {
+      activeKelas = namaKelas;
+      document.querySelectorAll('.btn-kelas').forEach(b => {
+        b.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+        b.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
+      });
+      btnElement.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
+      btnElement.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+
+      document.getElementById('kelasInfo').classList.remove('hidden');
+      document.getElementById('selectedKelasLabel').innerText = namaKelas;
+      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('siswaListContainer').classList.add('hidden');
+      document.getElementById('loadingState').classList.remove('hidden');
+
+      fetch(`${GAS_API_URL}?action=getSiswaByKelas&namaKelas=${encodeURIComponent(namaKelas)}`)
+        .then(res => res.json())
+        .then(res => {
+          document.getElementById('loadingState').classList.add('hidden');
+          if (res.success) renderSiswaList(res.data);
+          else Swal.fire('Error', res.message, 'error');
+        })
+        .catch(err => {
+          document.getElementById('loadingState').classList.add('hidden');
+          Swal.fire('Error System', err.toString(), 'error');
+        });
+    }
+
+    function renderSiswaList(dataSiswa) {
+      const tbody = document.getElementById('siswaTbody');
+      tbody.innerHTML = '';
+      document.getElementById('totalSiswaText').innerText = `${dataSiswa.length} Siswa`;
+
+      dataSiswa.forEach((siswa, index) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50 transition";
+
+        let actionButtonHtml = '';
+        if (siswa.sudahAbsen) {
+          let badgeColor = 'bg-green-100 text-green-700 border-green-300';
+          if (siswa.status === 'Terlambat') badgeColor = 'bg-yellow-100 text-yellow-700 border-yellow-300';
+          if (siswa.status === 'Bolos') badgeColor = 'bg-red-100 text-red-700 border-red-300';
+
+          actionButtonHtml = `
+            <div class="flex items-center justify-center gap-2">
+              <button disabled class="bg-green-500 text-white font-medium px-3 py-1.5 rounded-lg text-xs cursor-not-allowed flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check"></i> Sudah Absen
+              </button>
+              <span class="text-xs px-2 py-0.5 rounded border ${badgeColor}">${siswa.status}</span>
+            </div>
+          `;
+        } else {
+          actionButtonHtml = `
+            <button id="btn-absen-${siswa.idSiswa}" onclick="handleAbsen('${siswa.idSiswa}')" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-1.5 rounded-lg text-xs transition shadow flex items-center gap-1.5 mx-auto">
+              <i class="fa-solid fa-fingerprint"></i> Absen
+            </button>
+          `;
+        }
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium text-gray-500">${index + 1}</td>
+          <td class="py-3 px-4 font-mono text-xs text-gray-600">${siswa.idSiswa}</td>
+          <td class="py-3 px-4 font-semibold text-gray-800">${siswa.namaSiswa}</td>
+          <td class="py-3 px-4 text-gray-600">${siswa.jamAbsen || '-'}</td>
+          <td class="py-3 px-4 text-center">${actionButtonHtml}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('siswaListContainer').classList.remove('hidden');
+    }
+
+    function handleAbsen(idSiswa) {
+      const btn = document.getElementById(`btn-absen-${idSiswa}`);
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses...`;
+
+      fetch(GAS_API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'submitAbsen', idSiswa: idSiswa })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          Swal.fire({
+            toast: true, position: 'top-end', icon: 'success',
+            title: `Presensi Berhasil (${res.status})`, text: `Notifikasi WA: ${res.waSent}`,
+            showConfirmButton: false, timer: 3500
+          });
+          selectKelas(activeKelas, document.querySelector('.btn-kelas.bg-blue-600'));
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> Absen`;
+          Swal.fire('Gagal Presensi', res.message, 'warning');
+        }
+      })
+      .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i> Absen`;
+        Swal.fire('Error System', err.toString(), 'error');
+      });
+    }
+
+    function openRekapModal() { document.getElementById('rekapModal').classList.remove('hidden'); }
+    function closeRekapModal() { document.getElementById('rekapModal').classList.add('hidden'); }
+
+    function loadRekapData() {
+      const bulan = document.getElementById('rekapBulan').value;
+      const tahun = document.getElementById('rekapTahun').value;
+      document.getElementById('rekapLoading').classList.remove('hidden');
+
+      fetch(`${GAS_API_URL}?action=getRekapBulanan&bulan=${bulan}&tahun=${tahun}`)
+        .then(res => res.json())
+        .then(res => {
+          document.getElementById('rekapLoading').classList.add('hidden');
+          if (res.success) renderRekapTable(res.data);
+          else Swal.fire('Error', res.message, 'error');
+        })
+        .catch(err => {
+          document.getElementById('rekapLoading').classList.add('hidden');
+          Swal.fire('Error System', err.toString(), 'error');
+        });
+    }
+
+    function renderRekapTable(dataRekap) {
+      const tbody = document.getElementById('rekapTbody');
+      tbody.innerHTML = '';
+      if (dataRekap.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center p-4 text-gray-400">Tidak ada data presensi pada periode ini.</td></tr>`;
+        return;
+      }
+      dataRekap.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-2 border border-gray-300 text-center">${index + 1}</td>
+          <td class="p-2 border border-gray-300">${item.idSiswa}</td>
+          <td class="p-2 border border-gray-300 font-semibold">${item.namaSiswa}</td>
+          <td class="p-2 border border-gray-300">${item.kelas}</td>
+          <td class="p-2 border border-gray-300 text-center text-green-600 font-bold">${item.tepatWaktu}</td>
+          <td class="p-2 border border-gray-300 text-center text-yellow-600 font-bold">${item.terlambat}</td>
+          <td class="p-2 border border-gray-300 text-center text-red-600 font-bold">${item.bolos}</td>
+          <td class="p-2 border border-gray-300 text-center font-bold bg-gray-50">${item.totalHadir}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
