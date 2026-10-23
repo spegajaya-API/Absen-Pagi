@@ -524,6 +524,7 @@
       wrapper.innerHTML = html;
     }
 
+    // REKAP INDIVIDU DIBAGI MENJADI 2 KOLOM STATUS (STATUS PAGI & STATUS PULANG)
     function renderRekapIndividu(data) {
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
@@ -536,30 +537,63 @@
         return;
       }
 
+      // Gabungkan baris berdasarkan tanggal yang sama
+      let mapPerTanggal = {};
+      data.forEach(row => {
+        const tgl = row[0];
+        const jam = row[1];
+        const kelas = row[2];
+        const nama = row[3];
+        const status = row[4];
+
+        if (!mapPerTanggal[tgl]) {
+          mapPerTanggal[tgl] = { tanggal: tgl, kelas: kelas, nama: nama, pagi: "-", pulang: "-", jamPagi: "-", jamPulang: "-" };
+        }
+
+        if (status.includes("Hadir") || status.includes("Sakit") || status.includes("Ijin") || status.includes("Alpa")) {
+          mapPerTanggal[tgl].pagi = status;
+          mapPerTanggal[tgl].jamPagi = formatJamRapi(jam);
+        } else if (status.includes("Pulang") || status.includes("Bolos")) {
+          mapPerTanggal[tgl].pulang = status;
+          mapPerTanggal[tgl].jamPulang = formatJamRapi(jam);
+        }
+      });
+
       let html = `
         <table>
           <thead>
             <tr>
               <th>Tanggal</th>
-              <th>Jam</th>
-              <th>Kelas</th>
-              <th>Nama</th>
-              <th>Status</th>
+              <th>Status Pagi</th>
+              <th>Jam Pagi</th>
+              <th>Status Pulang</th>
+              <th>Jam Pulang</th>
             </tr>
           </thead>
           <tbody>
       `;
-      data.forEach(row => {
+
+      Object.keys(mapPerTanggal).sort().forEach(tgl => {
+        const item = mapPerTanggal[tgl];
+        // Jika status pagi adalah Sakit, Ijin, atau Alpa, kosongkan status & jam pulang
+        let statusPulangFinal = item.pulang;
+        let jamPulangFinal = item.jamPulang;
+        if (item.pagi.includes("Sakit") || item.pagi.includes("Ijin") || item.pagi.includes("Alpa")) {
+          statusPulangFinal = "-";
+          jamPulangFinal = "-";
+        }
+
         html += `
           <tr>
-            <td>${row[0] || '-'}</td>
-            <td>${formatJamRapi(row[1])}</td>
-            <td>${row[2] || '-'}</td>
-            <td>${row[3] || '-'}</td>
-            <td><strong>${row[4] || '-'}</strong></td>
+            <td>${item.tanggal}</td>
+            <td><strong>${item.pagi}</strong></td>
+            <td>${item.jamPagi}</td>
+            <td><strong>${statusPulangFinal}</strong></td>
+            <td>${jamPulangFinal}</td>
           </tr>
         `;
       });
+
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
