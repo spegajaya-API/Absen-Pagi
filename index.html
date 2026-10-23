@@ -108,7 +108,7 @@
     .view-section { display: none; }
     .view-section.active { display: block; }
     
-    /* HEADER CETAK RESMI (TETAP DIPERTAHANKAN) */
+    /* HEADER CETAK RESMI */
     .print-header { display: none; text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #000; }
     .print-header h2 { font-size: 1.4rem; color: #000; text-transform: uppercase; font-weight: 800; }
     .print-header h4 { font-size: 1rem; color: #333; margin-top: 5px; font-weight: 600; }
@@ -193,7 +193,6 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
           <h3 style="color: var(--cyan-neon);">Hasil Rekapitulasi</h3>
           <div style="display: flex; gap: 8px;">
-            <!-- TOMBOL DIKUNCI / DISABLED SAMPAI RENTANG WAKTU DIPILIH & REKAP DIMUAT -->
             <button id="btn-print" class="btn-action btn-absen" style="padding: 10px 18px;" onclick="window.print()" disabled style="opacity: 0.5; cursor: not-allowed;">Cetak / Simpan PDF</button>
             <button id="btn-send-wa" class="btn-action btn-wa" style="padding: 10px 18px;" onclick="kirimRekapMassalPdf()" disabled style="opacity: 0.5; cursor: not-allowed;">Kirim Rekap PDF ke WA</button>
           </div>
@@ -259,13 +258,19 @@
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
         presensiHariIni = await res.json();
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error("Gagal sinkron data presensi hari ini:", e); }
 
       listContainer.innerHTML = "";
       filtered.forEach(siswa => {
         const nama = siswa[1] ? siswa[1].toString().trim() : "";
         const noWa = siswa[2] ? siswa[2].toString().trim() : "";
         const keyMap = `${kelas.toLowerCase()}_${nama}`;
+        
+        // Cache lokal untuk mencegah tombol kedip/balik warna saat jeda sinkronisasi server
+        if (window.lokalAbsenCache && window.lokalAbsenCache[keyMap] && !presensiHariIni[keyMap]) {
+          presensiHariIni[keyMap] = window.lokalAbsenCache[keyMap];
+        }
+
         const savedStatus = presensiHariIni[keyMap];
         const card = document.createElement('div');
         card.className = 'student-card';
@@ -294,6 +299,11 @@
         const jam = now.getHours();
         statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
       }
+
+      // Simpan cache lokal seketika
+      if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
+      window.lokalAbsenCache[`${currentClass.toLowerCase()}_${nama}`] = statusFinal;
+
       const parentCard = btnElement.closest('.action-buttons');
       parentCard.innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusFinal}</button>`;
       
@@ -304,7 +314,7 @@
         body: JSON.stringify(payload)
       })
       .then(res => res.json())
-      .then(() => renderDaftarSiswa(currentClass, true))
+      .then(() => {})
       .catch(err => console.log(err));
     }
 
@@ -346,7 +356,6 @@
       fetch(`${SCRIPT_URL}?action=getRekap`)
         .then(res => res.json())
         .then(data => {
-          // Filter berdasarkan kelas dan rentang tanggal (row[0] adalah tanggal)
           let filtered = data.filter(d => {
             const matchKelas = d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase();
             const rowDate = d[0];
@@ -363,7 +372,6 @@
           document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
           document.getElementById('print-subheader-rentang').innerText = `Rentang Periode: ${tglAwal} s/d ${tglAkhir}`;
 
-          // Aktifkan tombol cetak dan kirim WA setelah rekap berhasil dimuat dengan rentang tanggal valid
           const btnPrint = document.getElementById('btn-print');
           const btnSendWa = document.getElementById('btn-send-wa');
           btnPrint.disabled = false;
@@ -383,7 +391,6 @@
         .catch(err => alert("Gagal memuat rekap: " + err));
     }
 
-    // 1. REKAP SELURUHNYA: AKUMULASI PER SISWA (TANPA WAKTU)
     function renderRekapAkumulasiKelas(data, kelas) {
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
@@ -396,7 +403,6 @@
         return;
       }
 
-      // Petakan rekap per siswa
       let rekapMap = {};
       siswaKelas.forEach(s => {
         const nama = s[1];
@@ -460,13 +466,12 @@
       wrapper.innerHTML = html;
     }
 
-    // 2. REKAP INDIVIDU: MEMUAT WAKTU/DETAIL SEPERTI ASLINYA
     function renderRekapIndividu(data) {
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
       document.getElementById('rekap-result-card').style.display = 'block';
 
-      statContainer.innerHTML = ""; // Individu tidak perlu kotak statistik kelas
+      statContainer.innerHTML = "";
 
       if (data.length === 0) {
         wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Belum ada data presensi tercatat untuk siswa ini pada rentang tanggal tersebut.</p>";
