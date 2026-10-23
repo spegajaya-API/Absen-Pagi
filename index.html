@@ -137,7 +137,7 @@
       <button class="tab-btn" onclick="switchTab('rekap-view', this)">Rekap & Cetak</button>
     </div>
 
-    <!-- SEKSI 1: INPUT -->
+    <!-- SEKSI 1: INPUT PRESENSI -->
     <div id="input-view" class="view-section active">
       <div class="glass-card">
         <div class="section-title">Pilih Kelas</div>
@@ -266,7 +266,7 @@
         const noWa = siswa[2] ? siswa[2].toString().trim() : "";
         const keyMap = `${kelas.toLowerCase()}_${nama}`;
         
-        // Cache lokal untuk mencegah tombol kedip/balik warna saat jeda sinkronisasi server
+        // Cache lokal untuk mencegah tombol berbalik warna saat jeda penyimpanan server
         if (window.lokalAbsenCache && window.lokalAbsenCache[keyMap] && !presensiHariIni[keyMap]) {
           presensiHariIni[keyMap] = window.lokalAbsenCache[keyMap];
         }
@@ -300,7 +300,6 @@
         statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
       }
 
-      // Simpan cache lokal seketika
       if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
       window.lokalAbsenCache[`${currentClass.toLowerCase()}_${nama}`] = statusFinal;
 
@@ -341,6 +340,15 @@
       });
     }
 
+    function formatJamRapi(jamStr) {
+      if (!jamStr || jamStr === '-') return '-';
+      if (typeof jamStr === 'string' && jamStr.includes('T')) {
+        const timePart = jamStr.split('T')[1];
+        if (timePart) return timePart.substring(0, 5) + " WIB";
+      }
+      return jamStr;
+    }
+
     function loadRekapData() {
       const kelas = document.getElementById('rekap-kelas').value;
       const tipe = document.getElementById('rekap-tipe').value;
@@ -374,13 +382,8 @@
 
           const btnPrint = document.getElementById('btn-print');
           const btnSendWa = document.getElementById('btn-send-wa');
-          btnPrint.disabled = false;
-          btnPrint.style.opacity = "1";
-          btnPrint.style.cursor = "pointer";
-          
-          btnSendWa.disabled = false;
-          btnSendWa.style.opacity = "1";
-          btnSendWa.style.cursor = "pointer";
+          btnPrint.disabled = false; btnPrint.style.opacity = "1"; btnPrint.style.cursor = "pointer";
+          btnSendWa.disabled = false; btnSendWa.style.opacity = "1"; btnSendWa.style.cursor = "pointer";
 
           if (tipe === 'kelas') {
             renderRekapAkumulasiKelas(filtered, kelas);
@@ -446,7 +449,6 @@
           </thead>
           <tbody>
       `;
-      
       let no = 1;
       Object.keys(rekapMap).forEach(nama => {
         const item = rekapMap[nama];
@@ -495,7 +497,7 @@
         html += `
           <tr>
             <td>${row[0] || '-'}</td>
-            <td>${row[1] || '-'}</td>
+            <td>${formatJamRapi(row[1])}</td>
             <td>${row[2] || '-'}</td>
             <td>${row[3] || '-'}</td>
             <td><strong>${row[4] || '-'}</strong></td>
@@ -508,12 +510,19 @@
 
     function kirimRekapMassalPdf() {
       const kelas = document.getElementById('rekap-kelas').value;
+      const tipe = document.getElementById('rekap-tipe').value;
+      const namaSiswa = document.getElementById('rekap-siswa').value;
+
       if (!currentFilteredData || currentFilteredData.length === 0) {
         alert("Tidak ada data rekap untuk dikirim.");
         return;
       }
 
-      if (!confirm(`Kirim file Rekap PDF Kelas ${kelas.toUpperCase()} ke seluruh wali murid via WA?`)) return;
+      const konfirmasiTeks = (tipe === 'individu')
+        ? `Kirim file Rekap PDF untuk siswa: ${namaSiswa} ke WhatsApp wali muridnya?`
+        : `Kirim file Rekap PDF Kelas ${kelas.toUpperCase()} ke seluruh wali murid via WA?`;
+
+      if (!confirm(konfirmasiTeks)) return;
 
       const printHeaderHTML = document.querySelector('.print-header').outerHTML;
       const statHTML = document.getElementById('rekap-summary-stat').outerHTML;
@@ -546,6 +555,8 @@
       const payload = {
         action: "kirimRekapMassalPdf",
         kelas: kelas,
+        tipe: tipe,
+        namaSiswa: namaSiswa,
         htmlContent: fullHTMLForPdf
       };
 
