@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRESENSI ONLINE PAGI - UPT SMP NEGERI 3 SUTOJAYAN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #090d16 0%, #0f172a 50%, #030712 100%);
+      --glass-bg: rgba(15, 23, 42, 0.75);
+      --glass-border: rgba(56, 189, 248, 0.2);
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      
+      --cyan-neon: #06b6d4;
+      --cyan-glow: 0 0 15px rgba(6, 182, 212, 0.5);
+      --blue-neon: #3b82f6;
+      
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-main);
+      min-height: 100vh;
+      padding: 30px 15px;
+    }
+    .container {
+      max-width: 950px;
+      margin: 0 auto;
+    }
+    /* HEADER UTAMA */
+    .app-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .app-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      background: linear-gradient(180deg, #ffffff 0%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+      margin-bottom: 8px;
+    }
+    .app-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    /* CARD FUTURISTIK */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--glass-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan-neon), transparent);
+    }
+    /* TABS NAVIGASI */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .tab-btn {
+      padding: 12px 28px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-dim);
+      border-radius: 30px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+    .tab-btn:hover {
+      border-color: var(--cyan-neon);
+      color: #fff;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+      border-color: var(--cyan-neon);
+      color: #fff;
+      box-shadow: var(--cyan-glow);
+    }
+    /* SEKSI DAN ELEMEN PILIHAN KELAS */
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--cyan-neon);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .flex-gap {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn-class {
+      padding: 10px 20px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      color: var(--text-main);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-class:hover {
+      background: #334155;
+      transform: translateY(-2px);
+    }
+    .btn-class.active {
+      background: var(--cyan-neon);
+      color: #030712;
+      font-weight: 700;
+      border-color: var(--cyan-neon);
+      box-shadow: var(--cyan-glow);
+    }
+    /* DAFTAR SISWA CARD */
+    .student-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+    }
+    .student-card:hover {
+      border-color: rgba(6, 182, 212, 0.3);
+      background: rgba(30, 41, 59, 0.8);
+    }
+    .student-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-action {
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn-absen { background: #10b981; color: #fff; }
+    .btn-sakit { background: #f59e0b; color: #fff; }
+    .btn-ijin { background: #3b82f6; color: #fff; }
+    .btn-alpa { background: #ef4444; color: #fff; }
+    .btn-wa { background: #25d366; color: #fff; }
+    .btn-action:hover {
+      opacity: 0.9;
+      transform: scale(1.05);
+    }
+    .btn-action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    /* INPUT & SELECT STYLE */
+    select, input {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #0f172a;
+      color: var(--text-main);
+      outline: none;
+      font-family: inherit;
+    }
+    select:focus, input:focus {
+      border-color: var(--cyan-neon);
+    }
+    /* REKAP STATISTIK BOX */
+    .stat-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      flex: 1;
+      min-width: 120px;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-title { font-size: 0.75rem; color: var(--text-dim); }
+    .stat-value { font-size: 1.2rem; font-weight: bold; margin-top: 4px; }
+
+    /* REKAP TABEL */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 12px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    th {
+      background: rgba(30, 41, 59, 0.9);
+      color: var(--cyan-neon);
+      font-weight: 700;
+    }
+    tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .view-section {
+      display: none;
+    }
+    .view-section.active {
+      display: block;
+    }
+
+    /* HEADER CETAK RESMI (TIDAK DIUBAH / TETAP DIPERTAHANKAN) */
+    .print-header {
+      display: none;
+      text-align: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #000;
+    }
+    .print-header h2 {
+      font-size: 1.4rem;
+      color: #000;
+      text-transform: uppercase;
+      font-weight: 800;
+    }
+    .print-header h4 {
+      font-size: 1rem;
+      color: #333;
+      margin-top: 5px;
+      font-weight: 600;
+    }
+    .print-header p {
+      font-size: 0.85rem;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    @media print {
+      body {
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+      }
+      .app-header, .tabs, .glass-card:not(#rekap-result-card), .no-print {
+        display: none !important;
+      }
+      .glass-card {
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        padding: 0 !important;
+      }
+      .print-header {
+        display: block !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      th, td {
+        border: 1px solid #000 !important;
+        color: #000 !important;
+        padding: 8px !important;
+      }
+      th {
+        background-color: #f1f5f9 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER UTAMA -->
+    <div class="app-header">
+      <h1 class="app-title">PRESENSI ONLINE PAGI</h1>
+      <div class="app-subtitle">UPT SMP NEGERI 3 SUTOJAYAN</div>
+    </div>
+
+    <!-- TAB NAVIGASI -->
+    <div class="tabs no-print">
+      <button class="tab-btn active" onclick="switchTab('input-view', this)">Input Presensi</button>
+      <button class="tab-btn" onclick="switchTab('rekap-view', this)">Rekap & Cetak</button>
+    </div>
+
+    <!-- SEKSI 1: INPUT PRESENSI -->
+    <div id="input-view" class="view-section active">
+      <div class="glass-card">
+        <div class="section-title">Pilih Kelas</div>
+        <div class="flex-gap">
+          <button class="btn-class" onclick="selectClass('7a', this)">7a</button>
+          <button class="btn-class" onclick="selectClass('8a', this)">8a</button>
+          <button class="btn-class" onclick="selectClass('8b', this)">8b</button>
+          <button class="btn-class" onclick="selectClass('9a', this)">9a</button>
+          <button class="btn-class" onclick="selectClass('9b', this)">9b</button>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div class="section-title" id="class-title">Daftar Siswa</div>
+        <div id="student-list">
+          <p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEKSI 2: REKAP DATA, CETAK & KIRIM PDF -->
+    <div id="rekap-view" class="view-section">
+      <div class="glass-card no-print">
+        <div class="section-title">Filter Rekap Data</div>
+        <div class="flex-gap">
+          <label>Kelas:</label>
+          <select id="rekap-kelas">
+            <option value="7a">7a</option>
+            <option value="8a">8a</option>
+            <option value="8b">8b</option>
+            <option value="9a">9a</option>
+            <option value="9b">9b</option>
+          </select>
+          <label>Tipe:</label>
+          <select id="rekap-tipe" onchange="toggleSiswaOption()">
+            <option value="kelas">Rekap Semuanya</option>
+            <option value="individu">Rekap Individu</option>
+          </select>
+          <div id="siswa-select-wrapper" style="display: none;">
+            <label>Siswa:</label>
+            <select id="rekap-siswa"></select>
+          </div>
+          <button class="btn-class active" onclick="loadRekapData()">Tampilkan Rekap</button>
+        </div>
+      </div>
+
+      <!-- HASIL REKAP YANG SIAP DICETAK & DIKIRIM -->
+      <div class="glass-card" id="rekap-result-card" style="display: none;">
+        
+        <!-- HEADER CETAK ASLI (DIPERTAHANKAN) -->
+        <div class="print-header">
+          <h2>Rekap Presensi UPT SMP NEGERI 3 SUTOJAYAN</h2>
+          <h4 id="print-subheader-kelas">Kelas: -</h4>
+          <p id="print-subheader-rentang">Periode Rekapitulasi Data</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
+          <h3 style="color: var(--cyan-neon);">Hasil Rekapitulasi</h3>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action btn-absen" style="padding: 10px 18px;" onclick="window.print()">Cetak / Simpan PDF</button>
+            <button class="btn-action btn-wa" style="padding: 10px 18px;" onclick="kirimRekapMassalPdf()">Kirim Rekap PDF ke WA</button>
+          </div>
+        </div>
+
+        <!-- STATISTIK RINGKASAN UMUM -->
+        <div id="rekap-summary-stat" class="stat-container"></div>
+
+        <!-- TABEL KONTEN REKAP -->
+        <div id="rekap-table-wrapper"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCGdnEHgZk-SK1YJzR-KFmTEFTMbABsAPR9uGw7V03yRbuP0Dd2z0BU1xOsCs-V-2E/exec";
+    let dataSiswa = [];
+    let currentClass = "";
+    let autoRefreshTimer = null;
+    let currentRekapData = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch(`${SCRIPT_URL}?action=getSiswa`)
+        .then(res => res.json())
+        .then(data => { dataSiswa = data; })
+        .catch(err => console.error("Gagal memuat data siswa:", err));
+    });
+
+    function switchTab(viewId, btn) {
+      document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      btn.classList.add('active');
+      if (viewId !== 'input-view' && autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+    async function selectClass(kelas, btn) {
+      currentClass = kelas;
+      if (btn) {
+        document.querySelectorAll('.btn-class').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      }
+      document.getElementById('class-title').innerText = `Daftar Siswa Kelas ${kelas.toUpperCase()}`;
+      await renderDaftarSiswa(kelas);
+      
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(() => {
+        if (currentClass) { renderDaftarSiswa(currentClass, true); }
+      }, 5000); 
+    }
+
+    async function renderDaftarSiswa(kelas, isSilent = false) {
+      const listContainer = document.getElementById('student-list');
+      if (!isSilent) {
+        listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Menyinkronkan data presensi...</p>";
+      }
+      const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
+      if (filtered.length === 0) {
+        listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
+        return;
+      }
+      let presensiHariIni = {};
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
+        presensiHariIni = await res.json();
+      } catch (e) { console.error("Gagal sinkron data presensi hari ini:", e); }
+
+      listContainer.innerHTML = "";
+      filtered.forEach(siswa => {
+        const nama = siswa[1] ? siswa[1].toString().trim() : "";
+        const noWa = siswa[2] ? siswa[2].toString().trim() : "";
+        const keyMap = `${kelas.toLowerCase()}_${nama}`;
+        const savedStatus = presensiHariIni[keyMap];
+        const card = document.createElement('div');
+        card.className = 'student-card';
+        let buttonsHTML = '';
+        if (savedStatus) {
+          buttonsHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${savedStatus}</button>`;
+        } else {
+          buttonsHTML = `
+            <button class="btn-action btn-absen" onclick="prosesAbsen('${nama}', '${noWa}', 'absen', this)">Absen</button>
+            <button class="btn-action btn-sakit" onclick="prosesAbsen('${nama}', '${noWa}', 'Sakit', this)">Sakit</button>
+            <button class="btn-action btn-ijin" onclick="prosesAbsen('${nama}', '${noWa}', 'Ijin', this)">Ijin</button>
+            <button class="btn-action btn-alpa" onclick="prosesAbsen('${nama}', '${noWa}', 'Alpa', this)">Alpa</button>
+          `;
+        }
+        card.innerHTML = `
+          <div class="student-name">${nama}</div>
+          <div class="action-buttons">${buttonsHTML}</div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    // ABSEN DISIMPAN KE SHEET (TANPA WA OTOMATIS)
+    function prosesAbsen(nama, noWa, tipe, btnElement) {
+      const now = new Date();
+      const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      const tanggalStr = now.toISOString().split('T')[0];
+      let statusFinal = tipe;
+      if (tipe === 'absen') {
+        const jam = now.getHours();
+        statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
+      }
+      const parentCard = btnElement.closest('.action-buttons');
+      parentCard.innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusFinal}</button>`;
+      
+      const payload = {
+        action: "absen",
+        kelas: currentClass,
+        nama: nama,
+        noWa: String(noWa),
+        status: statusFinal,
+        tanggal: tanggalStr,
+        jam: jamStr
+      };
+      
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(() => renderDaftarSiswa(currentClass, true))
+      .catch(err => console.log("Terproses"));
+    }
+
+    function toggleSiswaOption() {
+      const tipe = document.getElementById('rekap-tipe').value;
+      const wrapper = document.getElementById('siswa-select-wrapper');
+      if (tipe === 'individu') {
+        wrapper.style.display = 'block';
+        populateSiswaDropdown();
+      } else {
+        wrapper.style.display = 'none';
+      }
+    }
+
+    function populateSiswaDropdown() {
+      const kelas = document.getElementById('rekap-kelas').value;
+      const selectSiswa = document.getElementById('rekap-siswa');
+      selectSiswa.innerHTML = "";
+      const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
+      filtered.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s[1];
+        opt.innerText = s[1];
+        selectSiswa.appendChild(opt);
+      });
+    }
+
+    function loadRekapData() {
+      const kelas = document.getElementById('rekap-kelas').value;
+      const tipe = document.getElementById('rekap-tipe').value;
+      const namaSiswa = document.getElementById('rekap-siswa').value;
+      fetch(`${SCRIPT_URL}?action=getRekap`)
+        .then(res => res.json())
+        .then(data => {
+          let filteredData = data.filter(d => d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase());
+          if (tipe === 'individu') {
+            filteredData = filteredData.filter(d => d[3] === namaSiswa);
+          }
+          currentRekapData = filteredData;
+
+          document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
+          if (filteredData.length > 0) {
+            const tglAwal = filteredData[0][0] || '-';
+            const tglAkhir = filteredData[filteredData.length - 1][0] || '-';
+            document.getElementById('print-subheader-rentang').innerText = `Rentang Rekapitulasi: ${tglAwal} s/d ${tglAkhir}`;
+          } else {
+            document.getElementById('print-subheader-rentang').innerText = `Rentang Rekapitulasi: Semuanya`;
+          }
+          renderRekapTable(filteredData);
+        })
+        .catch(err => alert("Gagal memuat rekap."));
+    }
+
+    function renderRekapTable(data) {
+      const wrapper = document.getElementById('rekap-table-wrapper');
+      const statContainer = document.getElementById('rekap-summary-stat');
+      document.getElementById('rekap-result-card').style.display = 'block';
+
+      if (data.length === 0) {
+        statContainer.innerHTML = "";
+        wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Belum ada data presensi yang tercatat.</p>";
+        return;
+      }
+
+      // Hitung Statistik Umum per Kelas
+      let totalTepat = 0, totalTerlambat = 0, totalSakit = 0, totalIzin = 0, totalAlpa = 0;
+      data.forEach(row => {
+        const st = (row[4] || '').toLowerCase();
+        if (st.includes('tepat')) totalTepat++;
+        else if (st.includes('terlambat')) totalTerlambat++;
+        else if (st.includes('sakit')) totalSakit++;
+        else if (st.includes('ijin') || st.includes('izin')) totalIzin++;
+        else if (st.includes('alpa')) totalAlpa++;
+      });
+
+      statContainer.innerHTML = `
+        <div class="stat-box"><div class="stat-title">Tepat Waktu</div><div class="stat-value" style="color:#10b981;">${totalTepat}</div></div>
+        <div class="stat-box"><div class="stat-title">Terlambat</div><div class="stat-value" style="color:#f59e0b;">${totalTerlambat}</div></div>
+        <div class="stat-box"><div class="stat-title">Sakit</div><div class="stat-value" style="color:#eab308;">${totalSakit}</div></div>
+        <div class="stat-box"><div class="stat-title">Izin</div><div class="stat-value" style="color:#3b82f6;">${totalIzin}</div></div>
+        <div class="stat-box"><div class="stat-title">Alpa</div><div class="stat-value" style="color:#ef4444;">${totalAlpa}</div></div>
+      `;
+
+      let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Jam</th>
+              <th>Kelas</th>
+              <th>Nama</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      data.forEach(row => {
+        html += `
+          <tr>
+            <td>${row[0] || '-'}</td>
+            <td>${row[1] || '-'}</td>
+            <td>${row[2] || '-'}</td>
+            <td>${row[3] || '-'}</td>
+            <td><strong>${row[4] || '-'}</strong></td>
+          </tr>
+        `;
+      });
+      html += `</tbody></table>`;
+      wrapper.innerHTML = html;
+    }
+
+    // FUNGSI MENGIRIM REKAP PDF MASSAL VIA WHATSAPP
+    function kirimRekapMassalPdf() {
+      const kelas = document.getElementById('rekap-kelas').value;
+      if (!currentRekapData || currentRekapData.length === 0) {
+        alert("Tidak ada data rekap untuk dikirim.");
+        return;
+      }
+
+      if (!confirm(`Kirim file Rekap PDF Kelas ${kelas.toUpperCase()} ke seluruh wali murid via WA?`)) return;
+
+      // Ambil elemen header asli dan tabel untuk dijadikan HTML PDF
+      const printHeaderHTML = document.querySelector('.print-header').outerHTML;
+      const statHTML = document.getElementById('rekap-summary-stat').outerHTML;
+      const tableHTML = document.getElementById('rekap-table-wrapper').innerHTML;
+
+      const fullHTMLForPdf = `
+        <html>
+        <head>
+          <style>
+            body { font-family: sans-serif; padding: 20px; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .print-header h2 { font-size: 18px; margin: 0; }
+            .print-header h4 { font-size: 14px; margin: 5px 0; }
+            .print-header p { font-size: 12px; margin: 0; }
+            .stat-container { display: flex; gap: 10px; margin-bottom: 15px; }
+            .stat-box { border: 1px solid #ccc; padding: 8px; text-align: center; flex: 1; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th, td { border: 1px solid #000; padding: 8px; font-size: 12px; text-align: left; }
+            th { background-color: #f1f5f9; }
+          </style>
+        </head>
+        <body>
+          ${printHeaderHTML}
+          <h3>Statistik Kehadiran</h3>
+          ${statHTML}
+          <h3>Daftar Presensi</h3>
+          ${tableHTML}
+        </body>
+        </html>
+      `;
+
+      const payload = {
+        action: "kirimRekapMassalPdf",
+        kelas: kelas,
+        htmlContent: fullHTMLForPdf
+      };
+
+      alert("Prosedur pengiriman PDF sedang diproses. Mohon tunggu sejenak...");
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message || "Proses pengiriman selesai.");
+      })
+      .catch(err => alert("Gagal mengirim rekap PDF: " + err));
+    }
+  </script>
+</body>
+</html>
