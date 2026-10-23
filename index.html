@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PRESENSI ONLINE PAGI - UPT SMP NEGERI 3 SUTOJAYAN</title>
+  <title>PRESENSI ONLINE PAGI & PULANG - UPT SMP NEGERI 3 SUTOJAYAN</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -270,12 +270,10 @@
         
         if (!presensiHariIni[keyMap]) presensiHariIni[keyMap] = { pagi: "", pulang: "" };
 
-        // Cache lokal untuk mencegah kedip tombol pagi
         if (window.lokalAbsenCache && window.lokalAbsenCache[keyMap] && !presensiHariIni[keyMap].pagi) {
           presensiHariIni[keyMap].pagi = window.lokalAbsenCache[keyMap];
         }
 
-        // Cache lokal untuk tombol pulang
         if (window.lokalPulangCache && window.lokalPulangCache[keyMap] && !presensiHariIni[keyMap].pulang) {
           presensiHariIni[keyMap].pulang = window.lokalPulangCache[keyMap];
         }
@@ -284,7 +282,6 @@
         const card = document.createElement('div');
         card.className = 'student-card';
 
-        // Render Tombol Pagi
         let pagiHtml = '';
         if (dataAbsen.pagi) {
           pagiHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pagi}</button>`;
@@ -297,7 +294,6 @@
           `;
         }
 
-        // Render Tombol Pulang (Hanya aktif/bisa diklik jika status pagi adalah Hadir Tepat Waktu / Hadir Terlambat)
         let pulangHtml = '';
         const isHadir = dataAbsen.pagi && dataAbsen.pagi.includes("Hadir");
         if (dataAbsen.pulang) {
@@ -424,7 +420,7 @@
           });
 
           if (tipe === 'individu') {
-            filtered = filtered.filter(d => d[3] === namaSiswa);
+            filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
           }
 
           currentFilteredData = filtered;
