@@ -136,7 +136,6 @@
       <button class="tab-btn active" onclick="switchTab('input-view', this)">Input Presensi</button>
       <button class="tab-btn" onclick="switchTab('rekap-view', this)">Rekap & Cetak</button>
     </div>
-
     <!-- SEKSI 1: INPUT PRESENSI -->
     <div id="input-view" class="view-section active">
       <div class="glass-card">
@@ -154,7 +153,6 @@
         <div id="student-list"><p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu.</p></div>
       </div>
     </div>
-
     <!-- SEKSI 2: REKAP -->
     <div id="rekap-view" class="view-section">
       <div class="glass-card no-print">
@@ -182,7 +180,6 @@
           <button class="btn-class active" onclick="loadRekapData()">Tampilkan Rekap</button>
         </div>
       </div>
-
       <div class="glass-card" id="rekap-result-card" style="display: none;">
         <div class="print-header">
           <h2>Rekap Presensi UPT SMP NEGERI 3 SUTOJAYAN</h2>
@@ -201,9 +198,8 @@
       </div>
     </div>
   </div>
-
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCGdnEHgZk-SK1YJzR-KFmTEFTMbABsAPR9uGw7V03yRbuP0Dd2z0BU1xOsCs-V-2E/exec"; // URL Deployment Apps Script kamu
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCGdnEHgZk-SK1YJzR-KFmTEFTMbABsAPR9uGw7V03yRbuP0Dd2z0BU1xOsCs-V-2E/exec";
     let dataSiswa = [];
     let currentClass = "";
     let autoRefreshTimer = null;
@@ -271,11 +267,9 @@
         if (window.lokalPulangCache && window.lokalPulangCache[keyMap] && !presensiHariIni[keyMap].pulang) {
           presensiHariIni[keyMap].pulang = window.lokalPulangCache[keyMap];
         }
-
         const dataAbsen = presensiHariIni[keyMap];
         const card = document.createElement('div');
         card.className = 'student-card';
-
         let pagiHtml = '';
         if (dataAbsen.pagi) {
           pagiHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pagi}</button>`;
@@ -287,7 +281,6 @@
             <button class="btn-action btn-alpa" onclick="prosesAbsen('${nama}', '${noWa}', 'Alpa', this)">Alpa</button>
           `;
         }
-
         let pulangHtml = '';
         const isHadir = dataAbsen.pagi && dataAbsen.pagi.includes("Hadir");
         
@@ -298,7 +291,6 @@
         } else {
           pulangHtml = `<button class="btn-action" disabled style="background:#1e293b; color:#475569;">Belum Hadir</button>`;
         }
-
         card.innerHTML = `
           <div class="student-name">${nama}</div>
           <div class="action-group">
@@ -319,10 +311,8 @@
         const jam = now.getHours();
         statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
       }
-
       if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
       window.lokalAbsenCache[`${currentClass.toLowerCase()}_${nama}`] = statusFinal;
-
       const parentCard = btnElement.closest('.action-buttons');
       parentCard.innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusFinal}</button>`;
       
@@ -339,18 +329,14 @@
 
     function prosesBolos(nama, noWa, btnElement) {
       if (!confirm(`Tandai siswa ${nama} sebagai BOLOS?`)) return;
-
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
       const tanggalStr = now.toISOString().split('T')[0];
       const statusPulang = "Bolos";
-
       if (!window.lokalPulangCache) window.lokalPulangCache = {};
       window.lokalPulangCache[`${currentClass.toLowerCase()}_${nama}`] = statusPulang;
-
       const parentDiv = btnElement.closest('.pulang-action');
       parentDiv.innerHTML = `<button class="btn-action" disabled style="background:#dc2626; color:#fff;">Bolos</button>`;
-
       const payload = { action: "absen", kelas: currentClass, nama: nama, noWa: String(noWa), status: statusPulang, tanggal: tanggalStr, jam: jamStr };
       fetch(SCRIPT_URL, {
         method: "POST",
@@ -387,11 +373,15 @@
 
     function formatJamRapi(jamStr) {
       if (!jamStr || jamStr === '-') return '-';
-      if (typeof jamStr === 'string' && jamStr.includes('T')) {
-        const timePart = jamStr.split('T')[1];
-        if (timePart) return timePart.substring(0, 5) + " WIB";
+      let jamClean = String(jamStr).trim();
+      if (jamClean.includes('T')) {
+        const timePart = jamClean.split('T')[1];
+        if (timePart) jamClean = timePart.substring(0, 5);
       }
-      return jamStr + " WIB";
+      if (jamClean.length > 5 && jamClean.includes(':')) {
+        jamClean = jamClean.substring(0, 5);
+      }
+      return jamClean.includes('WIB') ? jamClean : jamClean + " WIB";
     }
 
     function loadRekapData() {
@@ -400,12 +390,10 @@
       const namaSiswa = document.getElementById('rekap-siswa').value;
       const tglAwal = document.getElementById('rekap-tgl-awal').value;
       const tglAkhir = document.getElementById('rekap-tgl-akhir').value;
-
       if (!tglAwal || !tglAkhir) {
         alert("Silakan pilih rentang tanggal awal dan tanggal akhir terlebih dahulu.");
         return;
       }
-
       fetch(`${SCRIPT_URL}?action=getRekap`)
         .then(res => res.json())
         .then(data => {
@@ -415,21 +403,16 @@
             const matchDate = rowDate >= tglAwal && rowDate <= tglAkhir;
             return matchKelas && matchDate;
           });
-
           if (tipe === 'individu') {
             filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
           }
-
           currentFilteredData = filtered;
-
           document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
           document.getElementById('print-subheader-rentang').innerText = `Rentang Periode: ${tglAwal} s/d ${tglAkhir}`;
-
           const btnPrint = document.getElementById('btn-print');
           const btnSendWa = document.getElementById('btn-send-wa');
           btnPrint.disabled = false; btnPrint.style.opacity = "1"; btnPrint.style.cursor = "pointer";
           btnSendWa.disabled = false; btnSendWa.style.opacity = "1"; btnSendWa.style.cursor = "pointer";
-
           if (tipe === 'kelas') {
             renderRekapAkumulasiKelas(filtered, kelas);
           } else {
@@ -443,22 +426,18 @@
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
       document.getElementById('rekap-result-card').style.display = 'block';
-
       const siswaKelas = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
       if (siswaKelas.length === 0) {
         statContainer.innerHTML = "";
         wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
         return;
       }
-
       let rekapMap = {};
       siswaKelas.forEach(s => {
         const nama = s[1];
         rekapMap[nama] = { tepat: 0, terlambat: 0, sakit: 0, ijin: 0, alpa: 0, pulang: 0, bolos: 0 };
       });
-
       let tTepat = 0, tTerlambat = 0, tSakit = 0, tIjin = 0, tAlpa = 0, tPulang = 0, tBolos = 0;
-
       data.forEach(row => {
         const nama = row[3];
         const status = (row[4] || '').toLowerCase();
@@ -472,7 +451,6 @@
           else if (status.includes('bolos')) { rekapMap[nama].bolos++; tBolos++; }
         }
       });
-
       statContainer.innerHTML = `
         <div class="stat-box"><div class="stat-title">Tepat Waktu</div><div class="stat-value" style="color:#10b981;">${tTepat}</div></div>
         <div class="stat-box"><div class="stat-title">Terlambat</div><div class="stat-value" style="color:#f59e0b;">${tTerlambat}</div></div>
@@ -482,7 +460,6 @@
         <div class="stat-box"><div class="stat-title">Pulang</div><div class="stat-value" style="color:#8b5cf6;">${tPulang}</div></div>
         <div class="stat-box"><div class="stat-title">Bolos</div><div class="stat-value" style="color:#ef4444;">${tBolos}</div></div>
       `;
-
       let html = `
         <table>
           <thead>
@@ -521,11 +498,11 @@
       wrapper.innerHTML = html;
     }
 
+    // FUNGSI REKAP INDIVIDU DENGAN PERBAIKAN PEMETAAN JAM & STATUS
     function renderRekapIndividu(data) {
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
       document.getElementById('rekap-result-card').style.display = 'block';
-
       statContainer.innerHTML = "";
 
       if (data.length === 0) {
@@ -539,19 +516,19 @@
         const jam = row[1];
         const kelas = row[2];
         const nama = row[3];
-        const status = row[4];
+        const status = String(row[4] || '');
 
         if (!mapPerTanggal[tgl]) {
           mapPerTanggal[tgl] = { tanggal: tgl, kelas: kelas, nama: nama, pagi: "-", pulang: "-", jamPagi: "-", jamPulang: "-" };
         }
 
-        // Pengecekan status Pagi secara spesifik
+        // Pengecekan status Pagi secara khusus
         if (status.includes("Hadir") || status.includes("Sakit") || status.includes("Ijin") || status.includes("Alpa")) {
           mapPerTanggal[tgl].pagi = status;
           mapPerTanggal[tgl].jamPagi = formatJamRapi(jam);
         } 
         
-        // Pengecekan status Pulang / Bolos secara spesifik
+        // Pengecekan status Pulang / Bolos secara khusus
         if (status.includes("Pulang") || status.includes("Bolos")) {
           mapPerTanggal[tgl].pulang = status;
           mapPerTanggal[tgl].jamPulang = formatJamRapi(jam);
@@ -601,22 +578,17 @@
       const kelas = document.getElementById('rekap-kelas').value;
       const tipe = document.getElementById('rekap-tipe').value;
       const namaSiswa = document.getElementById('rekap-siswa').value;
-
       if (!currentFilteredData || currentFilteredData.length === 0) {
         alert("Tidak ada data rekap untuk dikirim.");
         return;
       }
-
       const konfirmasiTeks = (tipe === 'individu')
         ? `Kirim file Rekap PDF (pagi & pulang) untuk siswa: ${namaSiswa} ke WhatsApp wali muridnya?`
         : `Kirim file Rekap PDF (pagi & pulang) Kelas ${kelas.toUpperCase()} ke seluruh wali murid via WA?`;
-
       if (!confirm(konfirmasiTeks)) return;
-
       const printHeaderHTML = document.querySelector('.print-header').outerHTML;
       const statHTML = document.getElementById('rekap-summary-stat').outerHTML;
       const tableHTML = document.getElementById('rekap-table-wrapper').innerHTML;
-
       const fullHTMLForPdf = `
         <html>
         <head>
@@ -640,7 +612,6 @@
         </body>
         </html>
       `;
-
       const payload = {
         action: "kirimRekapMassalPdf",
         kelas: kelas,
@@ -648,9 +619,7 @@
         namaSiswa: namaSiswa,
         htmlContent: fullHTMLForPdf
       };
-
       alert("Prosedur pengiriman PDF sedang diproses. Mohon tunggu sejenak...");
-
       fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
