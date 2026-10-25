@@ -136,6 +136,7 @@
       <button class="tab-btn active" onclick="switchTab('input-view', this)">Input Presensi</button>
       <button class="tab-btn" onclick="switchTab('rekap-view', this)">Rekap & Cetak</button>
     </div>
+
     <!-- SEKSI 1: INPUT PRESENSI -->
     <div id="input-view" class="view-section active">
       <div class="glass-card">
@@ -153,6 +154,7 @@
         <div id="student-list"><p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu.</p></div>
       </div>
     </div>
+
     <!-- SEKSI 2: REKAP -->
     <div id="rekap-view" class="view-section">
       <div class="glass-card no-print">
@@ -180,6 +182,7 @@
           <button class="btn-class active" onclick="loadRekapData()">Tampilkan Rekap</button>
         </div>
       </div>
+
       <div class="glass-card" id="rekap-result-card" style="display: none;">
         <div class="print-header">
           <h2>Rekap Presensi UPT SMP NEGERI 3 SUTOJAYAN</h2>
@@ -198,6 +201,7 @@
       </div>
     </div>
   </div>
+
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCGdnEHgZk-SK1YJzR-KFmTEFTMbABsAPR9uGw7V03yRbuP0Dd2z0BU1xOsCs-V-2E/exec";
     let dataSiswa = [];
@@ -371,17 +375,18 @@
       });
     }
 
+    // FUNGSI PEMERIKSA JAM PERSISIS DARISPREADSHEET
     function formatJamRapi(jamStr) {
       if (!jamStr || jamStr === '-') return '-';
-      let jamClean = String(jamStr).trim();
-      if (jamClean.includes('T')) {
-        const timePart = jamClean.split('T')[1];
-        if (timePart) jamClean = timePart.substring(0, 5);
+      let clean = String(jamStr).trim();
+      if (clean.includes('T')) {
+        const parts = clean.split('T')[1];
+        if (parts) clean = parts.substring(0, 5);
       }
-      if (jamClean.length > 5 && jamClean.includes(':')) {
-        jamClean = jamClean.substring(0, 5);
+      if (clean.length >= 5 && clean.includes(':')) {
+        clean = clean.substring(0, 5);
       }
-      return jamClean.includes('WIB') ? jamClean : jamClean + " WIB";
+      return clean.includes('WIB') ? clean : clean + " WIB";
     }
 
     function loadRekapData() {
@@ -399,7 +404,8 @@
         .then(data => {
           let filtered = data.filter(d => {
             const matchKelas = d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase();
-            const rowDate = d[0];
+            let rowDate = d[0];
+            if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
             const matchDate = rowDate >= tglAwal && rowDate <= tglAkhir;
             return matchKelas && matchDate;
           });
@@ -498,7 +504,7 @@
       wrapper.innerHTML = html;
     }
 
-    // FUNGSI REKAP INDIVIDU DENGAN PERBAIKAN PEMETAAN JAM & STATUS
+    // PEMETAAN PRESISI UNTUK REKAP INDIVIDU (ANTI-TERTUKAR & SAMA PERSIS SPREADSHEET)
     function renderRekapIndividu(data) {
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
@@ -512,23 +518,25 @@
 
       let mapPerTanggal = {};
       data.forEach(row => {
-        const tgl = row[0];
-        const jam = row[1];
-        const kelas = row[2];
-        const nama = row[3];
-        const status = String(row[4] || '');
+        let tgl = String(row[0]).trim();
+        if (tgl.includes('T')) tgl = tgl.split('T')[0];
+        
+        const jam = String(row[1]).trim();
+        const kelas = String(row[2]).trim();
+        const nama = String(row[3]).trim();
+        const status = String(row[4] || '').trim();
 
         if (!mapPerTanggal[tgl]) {
           mapPerTanggal[tgl] = { tanggal: tgl, kelas: kelas, nama: nama, pagi: "-", pulang: "-", jamPagi: "-", jamPulang: "-" };
         }
 
-        // Pengecekan status Pagi secara khusus
+        // Pagi
         if (status.includes("Hadir") || status.includes("Sakit") || status.includes("Ijin") || status.includes("Alpa")) {
           mapPerTanggal[tgl].pagi = status;
           mapPerTanggal[tgl].jamPagi = formatJamRapi(jam);
         } 
         
-        // Pengecekan status Pulang / Bolos secara khusus
+        // Pulang
         if (status.includes("Pulang") || status.includes("Bolos")) {
           mapPerTanggal[tgl].pulang = status;
           mapPerTanggal[tgl].jamPulang = formatJamRapi(jam);
