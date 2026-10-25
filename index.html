@@ -233,7 +233,28 @@
         document.querySelectorAll('.btn-class').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
       }
-      document.getElementById('class-title').innerText = `Daftar Siswa Kelas ${kelas.toUpperCase()}`; await renderDaftarSiswa(kelas);  if (autoRefreshTimer) clearInterval(autoRefreshTimer); autoRefreshTimer = setInterval(() => { if (currentClass) { renderDaftarSiswa(currentClass, true); } }, 5000); }  async function renderDaftarSiswa(kelas, isSilent = false) { const listContainer = document.getElementById('student-list'); if (!isSilent) { listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Menyinkronkan data presensi...</p>"; } const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase()); if (filtered.length === 0) { listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>"; return; } let presensiHariIni = {}; try { const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
+      document.getElementById('class-title').innerText = `Daftar Siswa Kelas ${kelas.toUpperCase()}`;
+      await renderDaftarSiswa(kelas);
+      
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      autoRefreshTimer = setInterval(() => {
+        if (currentClass) { renderDaftarSiswa(currentClass, true); }
+      }, 5000); 
+    }
+
+    async function renderDaftarSiswa(kelas, isSilent = false) {
+      const listContainer = document.getElementById('student-list');
+      if (!isSilent) {
+        listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Menyinkronkan data presensi...</p>";
+      }
+      const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
+      if (filtered.length === 0) {
+        listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
+        return;
+      }
+      let presensiHariIni = {};
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
         presensiHariIni = await res.json();
       } catch (e) { console.error("Gagal sinkron data presensi hari ini:", e); }
 
@@ -402,7 +423,7 @@
           currentFilteredData = filtered;
 
           document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
-          document.getElementById('print-subheader-rentang').innerText = `Rentang Periode: ${tglAwal} s/d${tglAkhir}`;
+          document.getElementById('print-subheader-rentang').innerText = `Rentang Periode: ${tglAwal} s/d ${tglAkhir}`;
 
           const btnPrint = document.getElementById('btn-print');
           const btnSendWa = document.getElementById('btn-send-wa');
@@ -609,4 +630,38 @@
             .stat-box { border: 1px solid #ccc; padding: 6px; text-align: center; flex: 1; }
             table { width: 100%; border-collapse: collapse; margin-top: 15px; }
             th, td { border: 1px solid #000; padding: 6px; font-size: 11px; text-align: left; }
-            th { background-color: #f1
+            th { background-color: #f1f5f9; }
+          </style>
+        </head>
+        <body>
+          ${printHeaderHTML}
+          ${statHTML}
+          ${tableHTML}
+        </body>
+        </html>
+      `;
+
+      const payload = {
+        action: "kirimRekapMassalPdf",
+        kelas: kelas,
+        tipe: tipe,
+        namaSiswa: namaSiswa,
+        htmlContent: fullHTMLForPdf
+      };
+
+      alert("Prosedur pengiriman PDF sedang diproses. Mohon tunggu sejenak...");
+
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message || "Proses pengiriman selesai.");
+      })
+      .catch(err => alert("Gagal mengirim rekap PDF: " + err));
+    }
+  </script>
+</body>
+</html>
