@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PRESENSI ONLINE & SHOLAT DHUHUR - UPT SMP NEGERI 3 SUTOJAYAN</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     :root {
       --bg-gradient: linear-gradient(135deg, #090d16 0%, #0f172a 50%, #030712 100%);
@@ -110,7 +111,6 @@
     .view-section { display: none; }
     .view-section.active { display: block; }
     
-    /* HEADER CETAK RESMI */
     .print-header { display: none; text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #000; }
     .print-header h2 { font-size: 1.4rem; color: #000; text-transform: uppercase; font-weight: 800; }
     .print-header h4 { font-size: 1rem; color: #333; margin-top: 5px; font-weight: 600; }
@@ -133,16 +133,29 @@
       <div class="app-subtitle">UPT SMP NEGERI 3 SUTOJAYAN</div>
     </div>
     
-    <!-- NAVIGATION TABS (4 MENU TERSENDIRI) -->
+    <!-- NAVIGATION TABS -->
     <div class="tabs no-print">
       <button class="tab-btn active" onclick="switchTab('input-view', this)">Input Presensi</button>
       <button class="tab-btn" onclick="switchTab('dhuhur-view', this)">Absen Sholat Dhuhur</button>
       <button class="tab-btn" onclick="switchTab('rekap-view', this)">Rekap Kehadiran</button>
       <button class="tab-btn" onclick="switchTab('rekap-dhuhur-view', this)">Rekap Dhuhur</button>
     </div>
-
     <!-- TAB 1: INPUT PRESENSI PAGI & PULANG -->
     <div id="input-view" class="view-section active">
+      <div class="glass-card no-print">
+        <div class="section-title">Scan QR Code Kartu Siswa (Kamera Piket Pagi)</div>
+        <div class="flex-gap" style="margin-bottom: 12px;">
+          <!-- Pilihan Kamera Depan / Belakang -->
+          <select id="camera-select-pagi" class="form-select" style="max-width: 170px;" onchange="changeCamera('pagi')">
+            <option value="environment">Kamera Belakang</option>
+            <option value="user">Kamera Depan</option>
+          </select>
+          <button id="btn-start-scan" class="btn-class active" onclick="toggleScanner('pagi', true)">Nyalakan Kamera</button>
+          <button id="btn-stop-scan" class="btn-class" onclick="toggleScanner('pagi', false)" style="background:#ef4444; border-color:#ef4444; color:#fff;">Matikan Kamera</button>
+        </div>
+        <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 12px; overflow: hidden; display: none;"></div>
+        <div id="scan-result" style="text-align: center; margin-top: 12px; font-weight: 600; color: var(--text-dim);">Kamera sedang mati. Klik "Nyalakan Kamera" untuk mulai scan.</div>
+      </div>
       <div class="glass-card">
         <div class="section-title">Pilih Kelas</div>
         <div class="flex-gap">
@@ -155,12 +168,25 @@
       </div>
       <div class="glass-card">
         <div class="section-title" id="class-title">Daftar Siswa</div>
-        <div id="student-list"><p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu.</p></div>
+        <div id="student-list"><p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu atau nyalakan kamera untuk Scan QR Code.</p></div>
       </div>
     </div>
-
     <!-- TAB 2: ABSEN SHOLAT DHUHUR -->
     <div id="dhuhur-view" class="view-section">
+      <div class="glass-card no-print">
+        <div class="section-title">Scan QR Code Sholat Dhuhur (Kamera Pengawas)</div>
+        <div class="flex-gap" style="margin-bottom: 12px;">
+          <!-- Pilihan Kamera Depan / Belakang Dhuhur -->
+          <select id="camera-select-dhuhur" class="form-select" style="max-width: 170px;" onchange="changeCamera('dhuhur')">
+            <option value="environment">Kamera Belakang</option>
+            <option value="user">Kamera Depan</option>
+          </select>
+          <button id="btn-start-dhuhur" class="btn-class active" onclick="toggleScanner('dhuhur', true)">Nyalakan Kamera Dhuhur</button>
+          <button id="btn-stop-dhuhur" class="btn-class" onclick="toggleScanner('dhuhur', false)" style="background:#ef4444; border-color:#ef4444; color:#fff;">Matikan Kamera Dhuhur</button>
+        </div>
+        <div id="reader-dhuhur" style="width: 100%; max-width: 400px; margin: 0 auto; border-radius: 12px; overflow: hidden; display: none;"></div>
+        <div id="scan-dhuhur-result" style="text-align: center; margin-top: 12px; font-weight: 600; color: var(--text-dim);">Kamera dhuhur sedang mati. Klik "Nyalakan Kamera Dhuhur" untuk mulai scan.</div>
+      </div>
       <div class="glass-card">
         <div class="section-title">Pilih Kelas Sholat Dhuhur</div>
         <div class="flex-gap">
@@ -173,11 +199,10 @@
       </div>
       <div class="glass-card">
         <div class="section-title" id="dhuhur-class-title">Daftar Siswa Sholat Dhuhur</div>
-        <div id="dhuhur-student-list"><p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu.</p></div>
+        <div id="dhuhur-student-list"><p style="text-align: center; color: var(--text-dim); padding: 20px 0;">Silakan pilih kelas terlebih dahulu atau nyalakan kamera.</p></div>
       </div>
     </div>
-
-    <!-- TAB 3: REKAP KEHADIRAN (PAGI / PULANG) -->
+    <!-- TAB 3: REKAP KEHADIRAN -->
     <div id="rekap-view" class="view-section">
       <div class="glass-card no-print">
         <div class="section-title">Filter Rekap Kehadiran Pagi & Pulang</div>
@@ -204,7 +229,6 @@
           <button class="btn-class active" onclick="loadRekapData()">Tampilkan Rekap</button>
         </div>
       </div>
-
       <div class="glass-card" id="rekap-result-card" style="display: none;">
         <div class="print-header">
           <h2>Rekap Presensi Kehadiran UPT SMP NEGERI 3 SUTOJAYAN</h2>
@@ -214,15 +238,14 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
           <h3 style="color: var(--cyan-neon);">Hasil Rekapitulasi Kehadiran</h3>
           <div style="display: flex; gap: 8px;">
-            <button id="btn-print" class="btn-action btn-absen" style="padding: 10px 18px;" onclick="window.print()" disabled style="opacity: 0.5; cursor: not-allowed;">Cetak / Simpan PDF</button>
-            <button id="btn-send-wa" class="btn-action btn-wa" style="padding: 10px 18px;" onclick="kirimRekapMassalPdf('Kehadiran')" disabled style="opacity: 0.5; cursor: not-allowed;">Kirim Rekap PDF ke WA</button>
+            <button id="btn-print" class="btn-action btn-absen" style="padding: 10px 18px;" onclick="window.print()" disabled>Cetak / Simpan PDF</button>
+            <button id="btn-send-wa" class="btn-action btn-wa" style="padding: 10px 18px;" onclick="kirimRekapMassalPdf('Kehadiran')" disabled>Kirim Rekap PDF ke WA</button>
           </div>
         </div>
         <div id="rekap-summary-stat" class="stat-container"></div>
         <div id="rekap-table-wrapper"></div>
       </div>
     </div>
-
     <!-- TAB 4: REKAP SHOLAT DHUHUR -->
     <div id="rekap-dhuhur-view" class="view-section">
       <div class="glass-card no-print">
@@ -250,7 +273,6 @@
           <button class="btn-class active" onclick="loadRekapDhuhurData()">Tampilkan Rekap Dhuhur</button>
         </div>
       </div>
-
       <div class="glass-card" id="rekap-dhuhur-result-card" style="display: none;">
         <div class="print-header">
           <h2>Rekap Sholat Dhuhur UPT SMP NEGERI 3 SUTOJAYAN</h2>
@@ -260,17 +282,15 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;" class="no-print">
           <h3 style="color: var(--cyan-neon);">Hasil Rekapitulasi Sholat Dhuhur</h3>
           <div style="display: flex; gap: 8px;">
-            <button id="btn-print-dhuhur" class="btn-action btn-absen" style="padding: 10px 18px;" onclick="window.print()" disabled style="opacity: 0.5; cursor: not-allowed;">Cetak / Simpan PDF</button>
-            <button id="btn-send-wa-dhuhur" class="btn-action btn-wa" style="padding: 10px 18px;" onclick="kirimRekapMassalPdf('Dhuhur')" disabled style="opacity: 0.5; cursor: not-allowed;">Kirim Rekap PDF ke WA</button>
+            <button id="btn-print-dhuhur" class="btn-action btn-absen" style="padding: 10px 18px;" onclick="window.print()" disabled>Cetak / Simpan PDF</button>
+            <button id="btn-send-wa-dhuhur" class="btn-action btn-wa" style="padding: 10px 18px;" onclick="kirimRekapMassalPdf('Dhuhur')" disabled>Kirim Rekap PDF ke WA</button>
           </div>
         </div>
         <div id="rekap-dhuhur-summary-stat" class="stat-container"></div>
         <div id="rekap-dhuhur-table-wrapper"></div>
       </div>
     </div>
-
   </div>
-
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxCGdnEHgZk-SK1YJzR-KFmTEFTMbABsAPR9uGw7V03yRbuP0Dd2z0BU1xOsCs-V-2E/exec";
     let dataSiswa = [];
@@ -279,7 +299,12 @@
     let autoRefreshTimer = null;
     let autoRefreshDhuhurTimer = null;
     let currentFilteredData = [];
-    let activeKategoriRekap = "Kehadiran";
+    
+    let html5QrCodeScanner = null;
+    let html5QrCodeDhuhur = null;
+    let isPagiScanning = false;
+    let isDhuhurScanning = false;
+    let isScanningReady = true;
 
     window.addEventListener('DOMContentLoaded', () => {
       fetch(`${SCRIPT_URL}?action=getSiswa`)
@@ -289,23 +314,247 @@
     });
 
     function switchTab(viewId, btn) {
+      if (isPagiScanning && html5QrCodeScanner) {
+        toggleScanner('pagi', false);
+      }
+      if (isDhuhurScanning && html5QrCodeDhuhur) {
+        toggleScanner('dhuhur', false);
+      }
       document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(viewId).classList.add('active');
       btn.classList.add('active');
-
-      if (viewId !== 'input-view' && autoRefreshTimer) {
-        clearInterval(autoRefreshTimer);
-        autoRefreshTimer = null;
+      
+      if (viewId !== 'input-view' && autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+      if (viewId !== 'dhuhur-view' && autoRefreshDhuhurTimer) { clearInterval(autoRefreshDhuhurTimer); autoRefreshDhuhurTimer = null; }
+    }
+    
+    // ==========================================
+    // KONTROL NYALA / MATI KAMERA (DENGAN PILIHAN KAMERA DEPAN/BELAKANG)
+    // ==========================================
+    function toggleScanner(tipe, nyalakan) {
+      if (tipe === 'pagi') {
+        const readerEl = document.getElementById('reader');
+        const statusEl = document.getElementById('scan-result');
+        const facingVal = document.getElementById('camera-select-pagi') ? document.getElementById('camera-select-pagi').value : "environment";
+        
+        if (nyalakan) {
+          readerEl.style.display = 'block';
+          statusEl.innerText = "Membuka kamera presensi...";
+          
+          if (!html5QrCodeScanner) {
+            html5QrCodeScanner = new Html5Qrcode("reader");
+          }
+          
+          html5QrCodeScanner.start(
+            { facingMode: facingVal }, 
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => { processScanResult(decodedText, 'pagi'); }
+          ).then(() => {
+            isPagiScanning = true;
+            statusEl.innerText = "Kamera aktif. Silakan arahkan ke QR Code siswa.";
+            statusEl.style.color = "var(--cyan-neon)";
+          }).catch(err => {
+            console.error("Gagal buka kamera:", err);
+            statusEl.innerText = "Gagal mengakses kamera (izin ditolak/sedang digunakan).";
+            statusEl.style.color = "#ef4444";
+            readerEl.style.display = 'none';
+          });
+        } else {
+          if (html5QrCodeScanner && isPagiScanning) {
+            html5QrCodeScanner.stop().then(() => {
+              isPagiScanning = false;
+              readerEl.style.display = 'none';
+              statusEl.innerText = "Kamera dimatikan.";
+              statusEl.style.color = "var(--text-dim)";
+            }).catch(err => console.log(err));
+          } else {
+            readerEl.style.display = 'none';
+            isPagiScanning = false;
+            statusEl.innerText = "Kamera dimatikan.";
+            statusEl.style.color = "var(--text-dim)";
+          }
+        }
+      } else if (tipe === 'dhuhur') {
+        const readerEl = document.getElementById('reader-dhuhur');
+        const statusEl = document.getElementById('scan-dhuhur-result');
+        const facingVal = document.getElementById('camera-select-dhuhur') ? document.getElementById('camera-select-dhuhur').value : "environment";
+        
+        if (nyalakan) {
+          readerEl.style.display = 'block';
+          statusEl.innerText = "Membuka kamera dhuhur...";
+          
+          if (!html5QrCodeDhuhur) {
+            html5QrCodeDhuhur = new Html5Qrcode("reader-dhuhur");
+          }
+          
+          html5QrCodeDhuhur.start(
+            { facingMode: facingVal }, 
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => { processScanResult(decodedText, 'dhuhur'); }
+          ).then(() => {
+            isDhuhurScanning = true;
+            statusEl.innerText = "Kamera dhuhur aktif. Silakan scan kartu.";
+            statusEl.style.color = "var(--cyan-neon)";
+          }).catch(err => {
+            console.error("Gagal buka kamera dhuhur:", err);
+            statusEl.innerText = "Gagal mengakses kamera dhuhur.";
+            statusEl.style.color = "#ef4444";
+            readerEl.style.display = 'none';
+          });
+        } else {
+          if (html5QrCodeDhuhur && isDhuhurScanning) {
+            html5QrCodeDhuhur.stop().then(() => {
+              isDhuhurScanning = false;
+              readerEl.style.display = 'none';
+              statusEl.innerText = "Kamera dhuhur dimatikan.";
+              statusEl.style.color = "var(--text-dim)";
+            }).catch(err => console.log(err));
+          } else {
+            readerEl.style.display = 'none';
+            isDhuhurScanning = false;
+            statusEl.innerText = "Kamera dhuhur dimatikan.";
+            statusEl.style.color = "var(--text-dim)";
+          }
+        }
       }
-      if (viewId !== 'dhuhur-view' && autoRefreshDhuhurTimer) {
-        clearInterval(autoRefreshDhuhurTimer);
-        autoRefreshDhuhurTimer = null;
+    }
+
+    function changeCamera(tipe) {
+      if (tipe === 'pagi' && isPagiScanning) {
+        toggleScanner('pagi', false);
+        setTimeout(() => { toggleScanner('pagi', true); }, 400);
+      } else if (tipe === 'dhuhur' && isDhuhurScanning) {
+        toggleScanner('dhuhur', false);
+        setTimeout(() => { toggleScanner('dhuhur', true); }, 400);
       }
     }
 
     // ==========================================
-    // SEKSI 1: LOGIKA PRESENSI PAGI & PULANG
+    // PROSES HASIL SCAN (STABIL & NOTIFIKASI SPESIFIK)
+    // ==========================================
+    async function processScanResult(decodedText, jenisScan) {
+      if (!isScanningReady) return;
+      isScanningReady = false; 
+
+      const statusEl = document.getElementById(jenisScan === 'pagi' ? 'scan-result' : 'scan-dhuhur-result');
+
+      const cleanText = decodedText.toString().trim().toLowerCase();
+      const siswa = dataSiswa.find(s => {
+        const nisnOrId = s[3] ? s[3].toString().trim().toLowerCase() : "";
+        const comboKey = `${s[0]}_${s[1]}`.trim().toLowerCase();
+        return nisnOrId === cleanText || comboKey === cleanText;
+      });
+
+      if (!siswa) {
+        statusEl.innerText = `QR Code tidak dikenali: "${decodedText}"`;
+        statusEl.style.color = "#ef4444";
+        setTimeout(() => { isScanningReady = true; }, 1500);
+        return;
+      }
+
+      const kelas = siswa[0];
+      const nama = siswa[1];
+      const noWa = siswa[2];
+      playBeepSound();
+
+      if (jenisScan === 'pagi') {
+        currentClass = kelas;
+        document.getElementById('class-title').innerText = `Daftar Siswa Kelas ${kelas.toUpperCase()}`;
+        renderDaftarSiswa(kelas);
+
+        try {
+          const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
+          const presensiHariIni = await res.json();
+          const keyMap = `${kelas.toLowerCase()}_${nama}`;
+          const dataAbsen = presensiHariIni[keyMap] || { pagi: "", pulang: "" };
+
+          if (dataAbsen.pagi) {
+            statusEl.innerText = `Anda Sudah Absen Hari Ini: ${nama}`;
+            statusEl.style.color = "#f59e0b"; // Kuning peringatan
+          } else {
+            prosesAbsenOtomatisScan(nama, noWa, kelas);
+            statusEl.innerText = `Presensi BERHASIL: ${nama}`;
+            statusEl.style.color = "#10b981"; // Hijau sukses
+          }
+        } catch (e) {
+          console.error(e);
+          prosesAbsenOtomatisScan(nama, noWa, kelas);
+          statusEl.innerText = `Presensi BERHASIL: ${nama}`;
+          statusEl.style.color = "#10b981";
+        }
+
+      } else {
+        currentDhuhurClass = kelas;
+        document.getElementById('dhuhur-class-title').innerText = `Daftar Siswa Sholat Dhuhur Kelas ${kelas.toUpperCase()}`;
+        renderDaftarDhuhurSiswa(kelas);
+
+        try {
+          const res = await fetch(`${SCRIPT_URL}?action=getDhuhurHariIni`);
+          const presensiDhuhurHariIni = await res.json();
+          const keyMap = `${kelas.toLowerCase()}_${nama}`;
+          const statusDhuhur = presensiDhuhurHariIni[keyMap] || "";
+
+          if (statusDhuhur) {
+            statusEl.innerText = `Anda Sudah Absen Hari Ini: ${nama}`;
+            statusEl.style.color = "#f59e0b";
+          } else {
+            prosesAbsenDhuhurOtomatisScan(nama, noWa, kelas);
+            statusEl.innerText = `Presensi BERHASIL: ${nama} (Dhuhur)`;
+            statusEl.style.color = "#10b981";
+          }
+        } catch (e) {
+          console.error(e);
+          prosesAbsenDhuhurOtomatisScan(nama, noWa, kelas);
+          statusEl.innerText = `Presensi BERHASIL: ${nama} (Dhuhur)`;
+          statusEl.style.color = "#10b981";
+        }
+      }
+
+      // Jeda cooldown 3 detik agar petugas bisa melihat teks notifikasi dengan jelas
+      setTimeout(() => {
+        isScanningReady = true;
+        statusEl.innerText = "Kamera aktif. Silakan siswa berikutnya...";
+        statusEl.style.color = "var(--cyan-neon)";
+      }, 3000);
+    }
+
+    function playBeepSound() {
+      try {
+        let audio = new Audio('https://media.geeksforgeeks.org/wp-content/uploads/20190529122828/bsound.mp3');
+        audio.play();
+      } catch(e) {}
+    }
+    function prosesAbsenOtomatisScan(nama, noWa, kelasTarget) {
+      const now = new Date();
+      const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      const tanggalStr = now.toISOString().split('T')[0];
+      const jam = now.getHours();
+      let statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
+      if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
+      window.lokalAbsenCache[`${kelasTarget.toLowerCase()}_${nama}`] = statusFinal;
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "absen", kelas: kelasTarget, nama: nama, noWa: String(noWa), status: statusFinal, tanggal: tanggalStr, jam: jamStr })
+      }).then(() => { renderDaftarSiswa(kelasTarget, true); });
+    }
+    function prosesAbsenDhuhurOtomatisScan(nama, noWa, kelasTarget) {
+      const now = new Date();
+      const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      const tanggalStr = now.toISOString().split('T')[0];
+      let statusVal = "Sholat";
+      if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
+      window.lokalDhuhurCache[`${kelasTarget.toLowerCase()}_${nama}`] = statusVal;
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "absenDhuhur", kelas: kelasTarget, nama: nama, noWa: String(noWa), status: statusVal, tanggal: tanggalStr, jam: jamStr })
+      }).then(() => { renderDaftarDhuhurSiswa(kelasTarget, true); });
+    }
+
+    // ==========================================
+    // RENDER MANUAL PRESENSI & DHUHUR
     // ==========================================
     async function selectClass(kelas, btn) {
       currentClass = kelas;
@@ -317,16 +566,12 @@
       await renderDaftarSiswa(kelas);
       
       if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-      autoRefreshTimer = setInterval(() => {
-        if (currentClass) { renderDaftarSiswa(currentClass, true); }
-      }, 5000); 
+      autoRefreshTimer = setInterval(() => { if (currentClass) renderDaftarSiswa(currentClass, true); }, 5000); 
     }
-
     async function renderDaftarSiswa(kelas, isSilent = false) {
       const listContainer = document.getElementById('student-list');
-      if (!isSilent) {
-        listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Memuat data siswa, mohon tunggu sebentar...</p>";
-      }
+      if (!isSilent) listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Memuat data siswa...</p>";
+      
       const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
       if (filtered.length === 0 && !isSilent) {
         listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
@@ -336,8 +581,8 @@
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
         presensiHariIni = await res.json();
-      } catch (e) { console.error("Gagal sinkron data presensi hari ini:", e); }
-
+      } catch (e) { console.error(e); }
+      
       listContainer.innerHTML = "";
       filtered.forEach(siswa => {
         const nama = siswa[1] ? siswa[1].toString().trim() : "";
@@ -355,88 +600,55 @@
         const card = document.createElement('div');
         card.className = 'student-card';
         
-        let pagiHtml = '';
-        if (dataAbsen.pagi) {
-          pagiHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pagi}</button>`;
-        } else {
-          pagiHtml = `
-            <button class="btn-action btn-absen" onclick="prosesAbsen('${nama}', '${noWa}', 'absen', this)">Absen</button>
-            <button class="btn-action btn-sakit" onclick="prosesAbsen('${nama}', '${noWa}', 'Sakit', this)">Sakit</button>
-            <button class="btn-action btn-ijin" onclick="prosesAbsen('${nama}', '${noWa}', 'Ijin', this)">Ijin</button>
-            <button class="btn-action btn-alpa" onclick="prosesAbsen('${nama}', '${noWa}', 'Alpa', this)">Alpa</button>
-          `;
-        }
-
-        let pulangHtml = '';
-        const isHadir = dataAbsen.pagi && dataAbsen.pagi.includes("Hadir");
-        if (dataAbsen.pulang) {
-          pulangHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pulang}</button>`;
-        } else if (isHadir) {
-          pulangHtml = `<button class="btn-action btn-bolos" onclick="prosesBolos('${nama}', '${noWa}', this)">Bolos</button>`;
-        } else {
-          pulangHtml = `<button class="btn-action" disabled style="background:#1e293b; color:#475569;">Belum Hadir</button>`;
-        }
-
-        card.innerHTML = `
-          <div class="student-name">${nama}</div>
-          <div class="action-group">
-            <div class="action-buttons">${pagiHtml}</div>
-            <div class="pulang-action">${pulangHtml}</div>
-          </div>
-        `;
+        let pagiHtml = dataAbsen.pagi 
+          ? `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pagi}</button>`
+          : `<button class="btn-action btn-absen" onclick="prosesAbsen('${nama}', '${noWa}', 'absen', this)">Absen</button>
+             <button class="btn-action btn-sakit" onclick="prosesAbsen('${nama}', '${noWa}', 'Sakit', this)">Sakit</button>
+             <button class="btn-action btn-ijin" onclick="prosesAbsen('${nama}', '${noWa}', 'Ijin', this)">Ijin</button>
+             <button class="btn-action btn-alpa" onclick="prosesAbsen('${nama}', '${noWa}', 'Alpa', this)">Alpa</button>`;
+        
+        let pulangHtml = dataAbsen.pulang 
+          ? `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pulang}</button>`
+          : (dataAbsen.pagi && dataAbsen.pagi.includes("Hadir") 
+              ? `<button class="btn-action btn-bolos" onclick="prosesBolos('${nama}', '${noWa}', this)">Bolos</button>` 
+              : `<button class="btn-action" disabled style="background:#1e293b; color:#475569;">Belum Hadir</button>`);
+        card.innerHTML = `<div class="student-name">${nama}</div><div class="action-group"><div class="action-buttons">${pagiHtml}</div><div class="pulang-action">${pulangHtml}</div></div>`;
         listContainer.appendChild(card);
       });
     }
-
     function prosesAbsen(nama, noWa, tipe, btnElement) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
       const tanggalStr = now.toISOString().split('T')[0];
-      let statusFinal = tipe;
-      if (tipe === 'absen') {
-        const jam = now.getHours();
-        statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
-      }
+      let statusFinal = tipe === 'absen' ? ((now.getHours() < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat") : tipe;
+      
       if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
       window.lokalAbsenCache[`${currentClass.toLowerCase()}_${nama}`] = statusFinal;
-      const parentCard = btnElement.closest('.action-buttons');
-      parentCard.innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusFinal}</button>`;
       
-      const payload = { action: "absen", kelas: currentClass, nama: nama, noWa: String(noWa), status: statusFinal, tanggal: tanggalStr, jam: jamStr };
+      btnElement.closest('.action-buttons').innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusFinal}</button>`;
+      
       fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(() => { renderDaftarSiswa(currentClass, true); })
-      .catch(err => console.log(err));
+        body: JSON.stringify({ action: "absen", kelas: currentClass, nama: nama, noWa: String(noWa), status: statusFinal, tanggal: tanggalStr, jam: jamStr })
+      }).then(() => { if (currentClass) renderDaftarSiswa(currentClass, true); });
     }
-
     function prosesBolos(nama, noWa, btnElement) {
       if (!confirm(`Tandai siswa ${nama} sebagai BOLOS?`)) return;
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
       const tanggalStr = now.toISOString().split('T')[0];
-      const statusPulang = "Bolos";
+      
       if (!window.lokalPulangCache) window.lokalPulangCache = {};
-      window.lokalPulangCache[`${currentClass.toLowerCase()}_${nama}`] = statusPulang;
-      const parentDiv = btnElement.closest('.pulang-action');
-      parentDiv.innerHTML = `<button class="btn-action" disabled style="background:#dc2626; color:#fff;">Bolos</button>`;
-      const payload = { action: "absen", kelas: currentClass, nama: nama, noWa: String(noWa), status: statusPulang, tanggal: tanggalStr, jam: jamStr };
+      window.lokalPulangCache[`${currentClass.toLowerCase()}_${nama}`] = "Bolos";
+      
+      btnElement.closest('.pulang-action').innerHTML = `<button class="btn-action" disabled style="background:#dc2626; color:#fff;">Bolos</button>`;
       fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(() => { renderDaftarSiswa(currentClass, true); })
-      .catch(err => console.log(err));
+        body: JSON.stringify({ action: "absen", kelas: currentClass, nama: nama, noWa: String(noWa), status: "Bolos", tanggal: tanggalStr, jam: jamStr })
+      }).then(() => { if (currentClass) renderDaftarSiswa(currentClass, true); });
     }
-
-    // ==========================================
-    // SEKSI 2: LOGIKA ABSEN SHOLAT DHUHUR
-    // ==========================================
     async function selectDhuhurClass(kelas, btn) {
       currentDhuhurClass = kelas;
       if (btn) {
@@ -447,16 +659,12 @@
       await renderDaftarDhuhurSiswa(kelas);
       
       if (autoRefreshDhuhurTimer) clearInterval(autoRefreshDhuhurTimer);
-      autoRefreshDhuhurTimer = setInterval(() => {
-        if (currentDhuhurClass) { renderDaftarDhuhurSiswa(currentDhuhurClass, true); }
-      }, 5000); 
+      autoRefreshDhuhurTimer = setInterval(() => { if (currentDhuhurClass) renderDaftarDhuhurSiswa(currentDhuhurClass, true); }, 5000); 
     }
-
     async function renderDaftarDhuhurSiswa(kelas, isSilent = false) {
       const listContainer = document.getElementById('dhuhur-student-list');
-      if (!isSilent) {
-        listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Memuat data siswa, mohon tunggu sebentar...</p>";
-      }
+      if (!isSilent) listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Memuat data siswa...</p>";
+      
       const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
       if (filtered.length === 0 && !isSilent) {
         listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
@@ -466,8 +674,8 @@
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getDhuhurHariIni`);
         presensiDhuhurHariIni = await res.json();
-      } catch (e) { console.error("Gagal sinkron data dhuhur:", e); }
-
+      } catch (e) { console.error(e); }
+      
       listContainer.innerHTML = "";
       filtered.forEach(siswa => {
         const nama = siswa[1] ? siswa[1].toString().trim() : "";
@@ -478,31 +686,18 @@
         if (window.lokalDhuhurCache && window.lokalDhuhurCache[keyMap] && !statusDhuhur) {
           statusDhuhur = window.lokalDhuhurCache[keyMap];
         }
-
         const card = document.createElement('div');
         card.className = 'student-card';
         
-        let dhuhurHtml = '';
-        if (statusDhuhur) {
-          dhuhurHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusDhuhur}</button>`;
-        } else {
-          dhuhurHtml = `
-            <button class="btn-action btn-absen" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Sholat', this)">Sholat</button>
-            <button class="btn-action btn-sakit" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Berhalangan', this)">Berhalangan</button>
-            <button class="btn-action btn-alpa" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Tidak Sholat', this)">Tidak Sholat</button>
-          `;
-        }
-
-        card.innerHTML = `
-          <div class="student-name">${nama}</div>
-          <div class="action-group">
-            <div class="action-buttons">${dhuhurHtml}</div>
-          </div>
-        `;
+        let dhuhurHtml = statusDhuhur 
+          ? `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusDhuhur}</button>`
+          : `<button class="btn-action btn-absen" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Sholat', this)">Sholat</button>
+             <button class="btn-action btn-sakit" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Berhalangan', this)">Berhalangan</button>
+             <button class="btn-action btn-alpa" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Tidak Sholat', this)">Tidak Sholat</button>`;
+        card.innerHTML = `<div class="student-name">${nama}</div><div class="action-group"><div class="action-buttons">${dhuhurHtml}</div></div>`;
         listContainer.appendChild(card);
       });
     }
-
     function prosesAbsenDhuhur(nama, noWa, statusVal, btnElement) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
@@ -511,22 +706,17 @@
       if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
       window.lokalDhuhurCache[`${currentDhuhurClass.toLowerCase()}_${nama}`] = statusVal;
       
-      const parentCard = btnElement.closest('.action-buttons');
-      parentCard.innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusVal}</button>`;
+      btnElement.closest('.action-buttons').innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusVal}</button>`;
       
-      const payload = { action: "absenDhuhur", kelas: currentDhuhurClass, nama: nama, noWa: String(noWa), status: statusVal, tanggal: tanggalStr, jam: jamStr };
       fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(() => { renderDaftarDhuhurSiswa(currentDhuhurClass, true); })
-      .catch(err => console.log(err));
+        body: JSON.stringify({ action: "absenDhuhur", kelas: currentDhuhurClass, nama: nama, noWa: String(noWa), status: statusVal, tanggal: tanggalStr, jam: jamStr })
+      }).then(() => { renderDaftarDhuhurSiswa(currentDhuhurClass, true); });
     }
 
     // ==========================================
-    // SEKSI 3: LOGIKA UTILS & REKAP
+    // UTILS & REKAP
     // ==========================================
     function toggleSiswaOption(tipeSelectId, wrapperId, kelasSelectId, siswaSelectId) {
       const tipe = document.getElementById(tipeSelectId).value;
@@ -538,100 +728,59 @@
         wrapper.style.display = 'none';
       }
     }
-
     function populateSiswaDropdown(kelasSelectId, siswaSelectId) {
       const kelas = document.getElementById(kelasSelectId).value;
       const selectSiswa = document.getElementById(siswaSelectId);
       selectSiswa.innerHTML = "";
-      const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
-      filtered.forEach(s => {
+      dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase()).forEach(s => {
         const opt = document.createElement('option');
         opt.value = s[1]; opt.innerText = s[1];
         selectSiswa.appendChild(opt);
       });
     }
-
     function formatJamRapi(jamStr) {
       if (!jamStr || jamStr === '-') return '-';
       let clean = String(jamStr).trim();
-      if (clean.includes('T')) {
-        const parts = clean.split('T')[1];
-        if (parts) clean = parts.substring(0, 5);
-      }
-      if (clean.length >= 5 && clean.includes(':')) {
-        clean = clean.substring(0, 5);
-      }
+      if (clean.includes('T')) clean = clean.split('T')[1].substring(0, 5);
       return clean.includes('WIB') ? clean : clean + " WIB";
     }
-
-    // --- REKAP KEHADIRAN ---
     function loadRekapData() {
-      activeKategoriRekap = "Kehadiran";
       const kelas = document.getElementById('rekap-kelas').value;
       const tipe = document.getElementById('rekap-tipe').value;
       const namaSiswa = document.getElementById('rekap-siswa').value;
       const tglAwal = document.getElementById('rekap-tgl-awal').value;
       const tglAkhir = document.getElementById('rekap-tgl-akhir').value;
-
-      if (!tglAwal || !tglAkhir) {
-        alert("Silakan pilih rentang tanggal awal dan tanggal akhir terlebih dahulu.");
-        return;
-      }
-
-      fetch(`${SCRIPT_URL}?action=getRekap`)
-        .then(res => res.json())
-        .then(data => {
-          let filtered = data.filter(d => {
-            const matchKelas = d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase();
-            let rowDate = d[0];
-            if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
-            return matchKelas && rowDate >= tglAwal && rowDate <= tglAkhir;
-          });
-
-          if (tipe === 'individu') {
-            filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
-          }
-
-          currentFilteredData = filtered;
-          document.getElementById('rekap-result-card').classList.add('result-card-active');
-          document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
-          document.getElementById('print-subheader-rentang').innerText = `Rentang Periode: ${tglAwal} s/d ${tglAkhir}`;
-          
-          const btnPrint = document.getElementById('btn-print');
-          const btnSendWa = document.getElementById('btn-send-wa');
-          btnPrint.disabled = false; btnPrint.style.opacity = "1"; btnPrint.style.cursor = "pointer";
-          btnSendWa.disabled = false; btnSendWa.style.opacity = "1"; btnSendWa.style.cursor = "pointer";
-
-          if (tipe === 'kelas') {
-            renderRekapAkumulasiKelas(filtered, kelas);
-          } else {
-            renderRekapIndividu(filtered);
-          }
-        })
-        .catch(err => alert("Gagal memuat rekap: " + err));
+      if (!tglAwal || !tglAkhir) { alert("Pilih rentang tanggal terlebih dahulu."); return; }
+      
+      fetch(`${SCRIPT_URL}?action=getRekap`).then(res => res.json()).then(data => {
+        let filtered = data.filter(d => {
+          let rowDate = d[0]; if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
+          return d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase() && rowDate >= tglAwal && rowDate <= tglAkhir;
+        });
+        if (tipe === 'individu') filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
+        currentFilteredData = filtered;
+        document.getElementById('rekap-result-card').classList.add('result-card-active');
+        document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
+        document.getElementById('print-subheader-rentang').innerText = `Periode: ${tglAwal} s/d ${tglAkhir}`;
+        document.getElementById('btn-print').disabled = false;
+        document.getElementById('btn-send-wa').disabled = false;
+        
+        if (tipe === 'kelas') renderRekapAkumulasiKelas(filtered, kelas);
+        else renderRekapIndividu(filtered);
+      });
     }
-
     function renderRekapAkumulasiKelas(data, kelas) {
       const wrapper = document.getElementById('rekap-table-wrapper');
       const statContainer = document.getElementById('rekap-summary-stat');
       document.getElementById('rekap-result-card').style.display = 'block';
       const siswaKelas = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
       
-      if (siswaKelas.length === 0) {
-        statContainer.innerHTML = "";
-        wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
-        return;
-      }
-
       let rekapMap = {};
-      siswaKelas.forEach(s => {
-        rekapMap[s[1]] = { tepat: 0, terlambat: 0, sakit: 0, ijin: 0, alpa: 0, pulang: 0, bolos: 0 };
-      });
-
+      siswaKelas.forEach(s => { rekapMap[s[1]] = { tepat: 0, terlambat: 0, sakit: 0, ijin: 0, alpa: 0, pulang: 0, bolos: 0 }; });
       let tTepat = 0, tTerlambat = 0, tSakit = 0, tIjin = 0, tAlpa = 0, tPulang = 0, tBolos = 0;
+      
       data.forEach(row => {
-        const nama = row[3];
-        const status = (row[4] || '').toLowerCase();
+        const nama = row[3]; const status = (row[4] || '').toLowerCase();
         if (rekapMap[nama]) {
           if (status.includes('tepat') && !status.includes('pulang')) { rekapMap[nama].tepat++; tTepat++; }
           else if (status.includes('terlambat')) { rekapMap[nama].terlambat++; tTerlambat++; }
@@ -642,7 +791,6 @@
           else if (status.includes('bolos')) { rekapMap[nama].bolos++; tBolos++; }
         }
       });
-
       statContainer.innerHTML = `
         <div class="stat-box"><div class="stat-title">Tepat Waktu</div><div class="stat-value" style="color:#10b981;">${tTepat}</div></div>
         <div class="stat-box"><div class="stat-title">Terlambat</div><div class="stat-value" style="color:#f59e0b;">${tTerlambat}</div></div>
@@ -652,347 +800,130 @@
         <div class="stat-box"><div class="stat-title">Pulang</div><div class="stat-value" style="color:#8b5cf6;">${tPulang}</div></div>
         <div class="stat-box"><div class="stat-title">Bolos</div><div class="stat-value" style="color:#ef4444;">${tBolos}</div></div>
       `;
-
-      let html = `
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama Siswa</th>
-              <th>Tepat Waktu</th>
-              <th>Terlambat</th>
-              <th>Sakit</th>
-              <th>Ijin</th>
-              <th>Alpa</th>
-              <th>Pulang</th>
-              <th>Bolos</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+      let html = `<table><thead><tr><th>No</th><th>Nama Siswa</th><th>Tepat Waktu</th><th>Terlambat</th><th>Sakit</th><th>Ijin</th><th>Alpa</th><th>Pulang</th><th>Bolos</th></tr></thead><tbody>`;
       let no = 1;
       Object.keys(rekapMap).forEach(nama => {
         const item = rekapMap[nama];
-        html += `
-          <tr>
-            <td>${no++}</td>
-            <td><strong>${nama}</strong></td>
-            <td>${item.tepat}</td>
-            <td>${item.terlambat}</td>
-            <td>${item.sakit}</td>
-            <td>${item.ijin}</td>
-            <td>${item.alpa}</td>
-            <td>${item.pulang}</td>
-            <td>${item.bolos}</td>
-          </tr>
-        `;
+        html += `<tr><td>${no++}</td><td><strong>${nama}</strong></td><td>${item.tepat}</td><td>${item.terlambat}</td><td>${item.sakit}</td><td>${item.ijin}</td><td>${item.alpa}</td><td>${item.pulang}</td><td>${item.bolos}</td></tr>`;
       });
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
-
     function renderRekapIndividu(data) {
       const wrapper = document.getElementById('rekap-table-wrapper');
-      const statContainer = document.getElementById('rekap-summary-stat');
+      document.getElementById('rekap-summary-stat').innerHTML = "";
       document.getElementById('rekap-result-card').style.display = 'block';
-      statContainer.innerHTML = "";
-
-      if (data.length === 0) {
-        wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Belum ada data presensi tercatat untuk siswa ini pada rentang tanggal tersebut.</p>";
-        return;
-      }
-
+      if (data.length === 0) { wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Belum ada data presensi.</p>"; return; }
+      
       let mapPerTanggal = {};
       data.forEach(row => {
-        let tgl = String(row[0]).trim();
-        if (tgl.includes('T')) tgl = tgl.split('T')[0];
-        
-        const jam = String(row[1]).trim();
-        const kelas = String(row[2]).trim();
-        const nama = String(row[3]).trim();
+        let tgl = String(row[0]).trim(); if (tgl.includes('T')) tgl = tgl.split('T')[0];
+        if (!mapPerTanggal[tgl]) mapPerTanggal[tgl] = { tanggal: tgl, pagi: "-", pulang: "-", jamPagi: "-", jamPulang: "-" };
         const status = String(row[4] || '').trim();
-
-        if (!mapPerTanggal[tgl]) {
-          mapPerTanggal[tgl] = { tanggal: tgl, kelas: kelas, nama: nama, pagi: "-", pulang: "-", jamPagi: "-", jamPulang: "-" };
-        }
-
+        const jam = String(row[1]).trim();
         if (status.includes("Hadir") || status.includes("Sakit") || status.includes("Ijin") || status.includes("Alpa")) {
-          mapPerTanggal[tgl].pagi = status;
-          mapPerTanggal[tgl].jamPagi = formatJamRapi(jam);
-        } 
+          mapPerTanggal[tgl].pagi = status; mapPerTanggal[tgl].jamPagi = formatJamRapi(jam);
+        }
         if (status.includes("Pulang") || status.includes("Bolos")) {
-          mapPerTanggal[tgl].pulang = status;
-          mapPerTanggal[tgl].jamPulang = formatJamRapi(jam);
+          mapPerTanggal[tgl].pulang = status; mapPerTanggal[tgl].jamPulang = formatJamRapi(jam);
         }
       });
-
-      let html = `
-        <table>
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Status Pagi</th>
-              <th>Jam Pagi</th>
-              <th>Status Pulang</th>
-              <th>Jam Pulang</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
+      let html = `<table><thead><tr><th>Tanggal</th><th>Status Pagi</th><th>Jam Pagi</th><th>Status Pulang</th><th>Jam Pulang</th></tr></thead><tbody>`;
       Object.keys(mapPerTanggal).sort().forEach(tgl => {
         const item = mapPerTanggal[tgl];
-        let statusPulangFinal = item.pulang;
-        let jamPulangFinal = item.jamPulang;
-
-        if (item.pagi.includes("Sakit") || item.pagi.includes("Ijin") || item.pagi.includes("Alpa")) {
-          statusPulangFinal = "-";
-          jamPulangFinal = "-";
-        }
-
-        html += `
-          <tr>
-            <td>${item.tanggal}</td>
-            <td><strong>${item.pagi}</strong></td>
-            <td>${item.jamPagi}</td>
-            <td><strong>${statusPulangFinal}</strong></td>
-            <td>${jamPulangFinal}</td>
-          </tr>
-        `;
+        html += `<tr><td>${item.tanggal}</td><td><strong>${item.pagi}</strong></td><td>${item.jamPagi}</td><td><strong>${item.pulang}</strong></td><td>${item.jamPulang}</td></tr>`;
       });
-
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
-
-    // --- REKAP DHUHUR ---
     function loadRekapDhuhurData() {
-      activeKategoriRekap = "Dhuhur";
       const kelas = document.getElementById('rekap-dhuhur-kelas').value;
       const tipe = document.getElementById('rekap-dhuhur-tipe').value;
       const namaSiswa = document.getElementById('rekap-dhuhur-siswa').value;
       const tglAwal = document.getElementById('rekap-dhuhur-tgl-awal').value;
       const tglAkhir = document.getElementById('rekap-dhuhur-tgl-akhir').value;
-
-      if (!tglAwal || !tglAkhir) {
-        alert("Silakan pilih rentang tanggal awal dan tanggal akhir terlebih dahulu.");
-        return;
-      }
-
-      fetch(`${SCRIPT_URL}?action=getRekapDhuhur`)
-        .then(res => res.json())
-        .then(data => {
-          let filtered = data.filter(d => {
-            const matchKelas = d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase();
-            let rowDate = d[0];
-            if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
-            return matchKelas && rowDate >= tglAwal && rowDate <= tglAkhir;
-          });
-
-          if (tipe === 'individu') {
-            filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
-          }
-
-          currentFilteredData = filtered;
-          document.getElementById('rekap-dhuhur-result-card').classList.add('result-card-active');
-          document.getElementById('print-dhuhur-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
-          document.getElementById('print-dhuhur-subheader-rentang').innerText = `Rentang Periode: ${tglAwal} s/d ${tglAkhir}`;
-          
-          const btnPrint = document.getElementById('btn-print-dhuhur');
-          const btnSendWa = document.getElementById('btn-send-wa-dhuhur');
-          btnPrint.disabled = false; btnPrint.style.opacity = "1"; btnPrint.style.cursor = "pointer";
-          btnSendWa.disabled = false; btnSendWa.style.opacity = "1"; btnSendWa.style.cursor = "pointer";
-
-          if (tipe === 'kelas') {
-            renderRekapDhuhurAkumulasi(filtered, kelas);
-          } else {
-            renderRekapDhuhurIndividu(filtered);
-          }
-        })
-        .catch(err => alert("Gagal memuat rekap dhuhur: " + err));
+      if (!tglAwal || !tglAkhir) { alert("Pilih rentang tanggal terlebih dahulu."); return; }
+      
+      fetch(`${SCRIPT_URL}?action=getRekapDhuhur`).then(res => res.json()).then(data => {
+        let filtered = data.filter(d => {
+          let rowDate = d[0]; if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
+          return d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase() && rowDate >= tglAwal && rowDate <= tglAkhir;
+        });
+        if (tipe === 'individu') filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
+        currentFilteredData = filtered;
+        document.getElementById('rekap-dhuhur-result-card').classList.add('result-card-active');
+        document.getElementById('print-dhuhur-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
+        document.getElementById('print-dhuhur-subheader-rentang').innerText = `Periode: ${tglAwal} s/d ${tglAkhir}`;
+        document.getElementById('btn-print-dhuhur').disabled = false;
+        document.getElementById('btn-send-wa-dhuhur').disabled = false;
+        
+        if (tipe === 'kelas') renderRekapDhuhurAkumulasi(filtered, kelas);
+        else renderRekapDhuhurIndividu(filtered);
+      });
     }
-
     function renderRekapDhuhurAkumulasi(data, kelas) {
       const wrapper = document.getElementById('rekap-dhuhur-table-wrapper');
       const statContainer = document.getElementById('rekap-dhuhur-summary-stat');
       document.getElementById('rekap-dhuhur-result-card').style.display = 'block';
       const siswaKelas = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
-
-      if (siswaKelas.length === 0) {
-        statContainer.innerHTML = "";
-        wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
-        return;
-      }
-
+      
       let rekapMap = {};
-      siswaKelas.forEach(s => {
-        rekapMap[s[1]] = { sholat: 0, berhalangan: 0, tidakSholat: 0 };
-      });
-
+      siswaKelas.forEach(s => { rekapMap[s[1]] = { sholat: 0, berhalangan: 0, tidakSholat: 0 }; });
       let tSholat = 0, tBerhalangan = 0, tTidakSholat = 0;
+      
       data.forEach(row => {
-        const nama = row[3];
-        const status = (row[4] || '').toLowerCase();
+        const nama = row[3]; const status = (row[4] || '').toLowerCase();
         if (rekapMap[nama]) {
           if (status.includes('sholat') && !status.includes('tidak')) { rekapMap[nama].sholat++; tSholat++; }
           else if (status.includes('berhalangan')) { rekapMap[nama].berhalangan++; tBerhalangan++; }
           else if (status.includes('tidak sholat')) { rekapMap[nama].tidakSholat++; tTidakSholat++; }
         }
       });
-
       statContainer.innerHTML = `
         <div class="stat-box"><div class="stat-title">Sholat</div><div class="stat-value" style="color:#10b981;">${tSholat}</div></div>
         <div class="stat-box"><div class="stat-title">Berhalangan</div><div class="stat-value" style="color:#f59e0b;">${tBerhalangan}</div></div>
         <div class="stat-box"><div class="stat-title">Tidak Sholat</div><div class="stat-value" style="color:#ef4444;">${tTidakSholat}</div></div>
       `;
-
-      let html = `
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>Nama Siswa</th>
-              <th>Sholat Dhuhur</th>
-              <th>Berhalangan</th>
-              <th>Tidak Sholat</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+      let html = `<table><thead><tr><th>No</th><th>Nama Siswa</th><th>Sholat Dhuhur</th><th>Berhalangan</th><th>Tidak Sholat</th></tr></thead><tbody>`;
       let no = 1;
       Object.keys(rekapMap).forEach(nama => {
         const item = rekapMap[nama];
-        html += `
-          <tr>
-            <td>${no++}</td>
-            <td><strong>${nama}</strong></td>
-            <td>${item.sholat}</td>
-            <td>${item.berhalangan}</td>
-            <td>${item.tidakSholat}</td>
-          </tr>
-        `;
+        html += `<tr><td>${no++}</td><td><strong>${nama}</strong></td><td>${item.sholat}</td><td>${item.berhalangan}</td><td>${item.tidakSholat}</td></tr>`;
       });
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
-
     function renderRekapDhuhurIndividu(data) {
       const wrapper = document.getElementById('rekap-dhuhur-table-wrapper');
-      const statContainer = document.getElementById('rekap-dhuhur-summary-stat');
+      document.getElementById('rekap-dhuhur-summary-stat').innerHTML = "";
       document.getElementById('rekap-dhuhur-result-card').style.display = 'block';
-      statContainer.innerHTML = "";
-
-      if (data.length === 0) {
-        wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Belum ada data sholat dhuhur tercatat untuk siswa ini pada rentang tanggal tersebut.</p>";
-        return;
-      }
-
-      let html = `
-        <table>
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Jam Input</th>
-              <th>Status Sholat Dhuhur</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
-
+      if (data.length === 0) { wrapper.innerHTML = "<p style='text-align:center; padding: 20px 0;'>Belum ada data dhuhur.</p>"; return; }
+      
+      let html = `<table><thead><tr><th>Tanggal</th><th>Jam Input</th><th>Status Sholat Dhuhur</th></tr></thead><tbody>`;
       data.sort((a,b) => String(a[0]).localeCompare(String(b[0]))).forEach(row => {
-        let tgl = String(row[0]).trim();
-        if (tgl.includes('T')) tgl = tgl.split('T')[0];
-        const jam = formatJamRapi(row[1]);
-        const status = row[4] || '-';
-
-        html += `
-          <tr>
-            <td>${tgl}</td>
-            <td>${jam}</td>
-            <td><strong>${status}</strong></td>
-          </tr>
-        `;
+        let tgl = String(row[0]).trim(); if (tgl.includes('T')) tgl = tgl.split('T')[0];
+        html += `<tr><td>${tgl}</td><td>${formatJamRapi(row[1])}</td><td><strong>${row[4] || '-'}</strong></td></tr>`;
       });
-
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
-
-    // --- KIRIM WA MASSAL PDF (DENGAN SUPORT KEHADIRAN & DHUHUR) ---
     function kirimRekapMassalPdf(kategori = "Kehadiran") {
       const isDhuhur = kategori === "Dhuhur";
-      const kelasSelectId = isDhuhur ? 'rekap-dhuhur-kelas' : 'rekap-kelas';
-      const tipeSelectId = isDhuhur ? 'rekap-dhuhur-tipe' : 'rekap-tipe';
-      const siswaSelectId = isDhuhur ? 'rekap-dhuhur-siswa' : 'rekap-siswa';
-      const resultCardId = isDhuhur ? 'rekap-dhuhur-result-card' : 'rekap-result-card';
-      const summaryId = isDhuhur ? 'rekap-dhuhur-summary-stat' : 'rekap-summary-stat';
-      const tableWrapperId = isDhuhur ? 'rekap-dhuhur-table-wrapper' : 'rekap-table-wrapper';
-
-      const kelas = document.getElementById(kelasSelectId).value;
-      const tipe = document.getElementById(tipeSelectId).value;
-      const namaSiswa = document.getElementById(siswaSelectId).value;
-
-      if (!currentFilteredData || currentFilteredData.length === 0) {
-        alert("Tidak ada data rekap untuk dikirim.");
-        return;
-      }
-
-      const judulPesan = isDhuhur ? "Rekap Sholat Dhuhur" : "Rekap Presensi (pagi & pulang)";
-      const konfirmasiTeks = (tipe === 'individu')
-        ? `Kirim file ${judulPesan} PDF untuk siswa: ${namaSiswa} ke WhatsApp wali muridnya?`
-        : `Kirim file ${judulPesan} PDF Kelas ${kelas.toUpperCase()} ke seluruh wali murid via WA?`;
+      const kelas = document.getElementById(isDhuhur ? 'rekap-dhuhur-kelas' : 'rekap-kelas').value;
+      const tipe = document.getElementById(isDhuhur ? 'rekap-dhuhur-tipe' : 'rekap-tipe').value;
+      const namaSiswa = document.getElementById(isDhuhur ? 'rekap-dhuhur-siswa' : 'rekap-siswa').value;
       
-      if (!confirm(konfirmasiTeks)) return;
-
-      const cardEl = document.getElementById(resultCardId);
-      const printHeaderHTML = cardEl.querySelector('.print-header').outerHTML;
-      const statHTML = document.getElementById(summaryId).outerHTML;
-      const tableHTML = document.getElementById(tableWrapperId).innerHTML;
-
-      const fullHTMLForPdf = `
-        <html>
-        <head>
-          <style>
-            body { font-family: sans-serif; padding: 20px; }
-            .print-header { display: block !important; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .print-header h2 { font-size: 18px; margin: 0; }
-            .print-header h4 { font-size: 14px; margin: 5px 0; }
-            .print-header p { font-size: 12px; margin: 0; }
-            .stat-container { display: flex; gap: 8px; margin-bottom: 15px; }
-            .stat-box { border: 1px solid #ccc; padding: 6px; text-align: center; flex: 1; }
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th, td { border: 1px solid #000; padding: 6px; font-size: 11px; text-align: left; }
-            th { background-color: #f1f5f9; }
-          </style>
-        </head>
-        <body>
-          ${printHeaderHTML}
-          ${statHTML}
-          ${tableHTML}
-        </body>
-        </html>
-      `;
-
-      const payload = {
-        action: "kirimRekapMassalPdf",
-        kelas: kelas,
-        tipe: tipe,
-        namaSiswa: namaSiswa,
-        kategori: kategori,
-        htmlContent: fullHTMLForPdf
-      };
-
-      alert("Prosedur pengiriman PDF sedang diproses. Mohon tunggu sejenak...");
+      if (!currentFilteredData || currentFilteredData.length === 0) { alert("Tidak ada data untuk dikirim."); return; }
+      if (!confirm(`Kirim file PDF ${kategori} ke WhatsApp wali murid?`)) return;
+      
+      const cardEl = document.getElementById(isDhuhur ? 'rekap-dhuhur-result-card' : 'rekap-result-card');
+      const fullHTMLForPdf = `<html><head><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-top:15px;}th,td{border:1px solid #000;padding:6px;font-size:11px;text-align:left;}th{background-color:#f1f5f9;}</style></head><body>${cardEl.querySelector('.print-header').outerHTML}${document.getElementById(isDhuhur ? 'rekap-dhuhur-summary-stat' : 'rekap-summary-stat').outerHTML}${document.getElementById(isDhuhur ? 'rekap-dhuhur-table-wrapper' : 'rekap-table-wrapper').innerHTML}</body></html>`;
+      
       fetch(SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-      })
-      .then(res => res.json())
-      .then(res => {
-        alert(res.message || "Proses pengiriman selesai.");
-      })
-      .catch(err => alert("Gagal mengirim rekap PDF: " + err));
+        body: JSON.stringify({ action: "kirimRekapMassalPdf", kelas, tipe, namaSiswa, kategori, htmlContent: fullHTMLForPdf })
+      }).then(res => res.json()).then(res => alert(res.message || "Selesai.")).catch(err => alert("Gagal: " + err));
     }
   </script>
 </body>
