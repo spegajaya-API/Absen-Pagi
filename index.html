@@ -579,68 +579,140 @@
     }
     async function renderDaftarSiswa(kelas, isSilent = false) {
       const listContainer = document.getElementById('student-list');
-      if (!isSilent) listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Memuat data siswa...</p>";
-      
-      const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
-      if (filtered.length === 0 && !isSilent) {
-        listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
+      if (!isSilent) {
+        listContainer.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px 0;'>Memuat data siswa...</p>";
+      }
+
+      const filtered = dataSiswa.filter(s =>
+        s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase()
+      );
+
+      if (filtered.length === 0) {
+        if (!isSilent) {
+          listContainer.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
+        }
         return;
       }
-      let presensiHariIni = {};
+
+      let presensiHariIni;
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
+        if (!res.ok) throw new Error('Gagal mengambil data presensi dari server.');
         presensiHariIni = await res.json();
-      } catch (e) { console.error(e); }
-      
-      listContainer.innerHTML = "";
+        if (!presensiHariIni || typeof presensiHariIni !== 'object' || Array.isArray(presensiHariIni)) {
+          throw new Error('Format data presensi dari server tidak valid.');
+        }
+      } catch (e) {
+        console.error('Gagal memuat presensi:', e);
+        if (!isSilent) {
+          listContainer.innerHTML = "<p style='text-align:center; color:#ef4444; padding:20px 0;'>Gagal memuat data presensi. Periksa koneksi internet lalu coba kembali.</p>";
+        }
+        return;
+      }
+
+      if (!window.presensiPending) window.presensiPending = {};
+      listContainer.innerHTML = '';
+
       filtered.forEach(siswa => {
-        const nama = siswa[1] ? siswa[1].toString().trim() : "";
-        const noWa = siswa[2] ? siswa[2].toString().trim() : "";
+        const nama = siswa[1] ? siswa[1].toString().trim() : '';
+        const noWa = siswa[2] ? siswa[2].toString().trim() : '';
         const keyMap = `${kelas.toLowerCase()}_${nama}`;
-        
-        if (!presensiHariIni[keyMap]) presensiHariIni[keyMap] = { pagi: "", pulang: "" };
+
+        if (!presensiHariIni[keyMap]) presensiHariIni[keyMap] = { pagi: '', pulang: '' };
         if (window.lokalAbsenCache && window.lokalAbsenCache[keyMap] && !presensiHariIni[keyMap].pagi) {
           presensiHariIni[keyMap].pagi = window.lokalAbsenCache[keyMap];
         }
         if (window.lokalPulangCache && window.lokalPulangCache[keyMap] && !presensiHariIni[keyMap].pulang) {
           presensiHariIni[keyMap].pulang = window.lokalPulangCache[keyMap];
         }
+
         const dataAbsen = presensiHariIni[keyMap];
         const card = document.createElement('div');
         card.className = 'student-card';
-        
-        let pagiHtml = dataAbsen.pagi 
-          ? `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pagi}</button>`
-          : `<button class="btn-action btn-absen" onclick="prosesAbsen('${nama}', '${noWa}', 'absen', this)">Absen</button>
+
+        let pagiHtml;
+        if (window.presensiPending[keyMap]) {
+          pagiHtml = `<button class="btn-action" disabled style="background:#475569; color:#fff;">Menyimpan...</button>`;
+        } else if (dataAbsen.pagi) {
+          pagiHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pagi}</button>`;
+        } else {
+          pagiHtml = `<button class="btn-action btn-absen" onclick="prosesAbsen('${nama}', '${noWa}', 'absen', this)">Absen</button>
              <button class="btn-action btn-sakit" onclick="prosesAbsen('${nama}', '${noWa}', 'Sakit', this)">Sakit</button>
              <button class="btn-action btn-ijin" onclick="prosesAbsen('${nama}', '${noWa}', 'Ijin', this)">Ijin</button>
              <button class="btn-action btn-alpa" onclick="prosesAbsen('${nama}', '${noWa}', 'Alpa', this)">Alpa</button>`;
-        
-        let pulangHtml = dataAbsen.pulang 
+        }
+
+        let pulangHtml = dataAbsen.pulang
           ? `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${dataAbsen.pulang}</button>`
-          : (dataAbsen.pagi && dataAbsen.pagi.includes("Hadir") 
-              ? `<button class="btn-action btn-bolos" onclick="prosesBolos('${nama}', '${noWa}', this)">Bolos</button>` 
+          : (dataAbsen.pagi && dataAbsen.pagi.includes('Hadir')
+              ? `<button class="btn-action btn-bolos" onclick="prosesBolos('${nama}', '${noWa}', this)">Bolos</button>`
               : `<button class="btn-action" disabled style="background:#1e293b; color:#475569;">Belum Hadir</button>`);
+
         card.innerHTML = `<div class="student-name">${nama}</div><div class="action-group"><div class="action-buttons">${pagiHtml}</div><div class="pulang-action">${pulangHtml}</div></div>`;
         listContainer.appendChild(card);
       });
     }
-    function prosesAbsen(nama, noWa, tipe, btnElement) {
+
+    async function prosesAbsen(nama, noWa, tipe, btnElement) {
+      if (!currentClass || !btnElement) return;
+
+      const kelasTarget = currentClass;
+      const keyMap = `${kelasTarget.toLowerCase()}_${nama}`;
+      if (!window.presensiPending) window.presensiPending = {};
+      if (window.presensiPending[keyMap]) return;
+
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
       const tanggalStr = getTanggalLokal();
-      let statusFinal = tipe === 'absen' ? ((now.getHours() < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat") : tipe;
-      
-      if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
-      window.lokalAbsenCache[`${currentClass.toLowerCase()}_${nama}`] = statusFinal;
-      
-      btnElement.closest('.action-buttons').innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusFinal}</button>`;
-      
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "absen", kelas: currentClass, nama: nama, noWa: String(noWa), status: statusFinal, tanggal: tanggalStr, jam: jamStr })
-      }).then(() => { if (currentClass) renderDaftarSiswa(currentClass, true); });
+      const statusFinal = tipe === 'absen'
+        ? (now.getHours() < 7 ? 'Hadir Tepat Waktu' : 'Hadir Terlambat')
+        : tipe;
+
+      window.presensiPending[keyMap] = true;
+      const actionContainer = btnElement.closest('.action-buttons');
+      if (actionContainer) {
+        actionContainer.innerHTML = `<button class="btn-action" disabled style="background:#475569; color:#fff;">Menyimpan...</button>`;
+      }
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'absen',
+            kelas: kelasTarget,
+            nama: nama,
+            noWa: String(noWa),
+            status: statusFinal,
+            tanggal: tanggalStr,
+            jam: jamStr
+          })
+        });
+
+        if (!response.ok) throw new Error('Server tidak dapat memproses permintaan.');
+        const hasil = await response.json();
+
+        if (hasil.status === 'success') {
+          if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
+          window.lokalAbsenCache[keyMap] = statusFinal;
+          delete window.presensiPending[keyMap];
+          await renderDaftarSiswa(kelasTarget, true);
+          alert('Presensi berhasil disimpan.');
+        } else if (hasil.status === 'duplicate') {
+          delete window.presensiPending[keyMap];
+          await renderDaftarSiswa(kelasTarget, true);
+          alert(hasil.message || 'Presensi siswa ini sudah tercatat hari ini.');
+        } else {
+          throw new Error(hasil.message || 'Server belum mengonfirmasi penyimpanan.');
+        }
+      } catch (error) {
+        console.error('Kesalahan presensi:', error);
+        delete window.presensiPending[keyMap];
+        // Muat ulang dari server. Jika server tidak bisa dihubungi,
+        // fungsi render menampilkan pesan gagal dan tidak menganggap berhasil.
+        await renderDaftarSiswa(kelasTarget, false);
+        alert('Presensi belum dapat dikonfirmasi oleh server. Periksa koneksi dan data presensi sebelum mencoba kembali.');
+      }
     }
     function prosesBolos(nama, noWa, btnElement) {
       if (!confirm(`Tandai siswa ${nama} sebagai BOLOS?`)) return;
