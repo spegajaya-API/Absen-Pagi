@@ -440,13 +440,15 @@
     }
 
     // ==========================================
-    // PROSES HASIL SCAN (STABIL & NOTIFIKASI SPESIFIK)
+    // PROSES HASIL SCAN QR DENGAN KONFIRMASI SERVER
     // ==========================================
     async function processScanResult(decodedText, jenisScan) {
       if (!isScanningReady) return;
-      isScanningReady = false; 
+      isScanningReady = false;
 
-      const statusEl = document.getElementById(jenisScan === 'pagi' ? 'scan-result' : 'scan-dhuhur-result');
+      const statusEl = document.getElementById(
+        jenisScan === 'pagi' ? 'scan-result' : 'scan-dhuhur-result'
+      );
 
       const cleanText = decodedText.toString().trim().toLowerCase();
       const siswa = dataSiswa.find(s => {
@@ -462,65 +464,59 @@
         return;
       }
 
-      const kelas = siswa[0];
-      const nama = siswa[1];
-      const noWa = siswa[2];
+      const kelas = String(siswa[0]).trim();
+      const nama = String(siswa[1]).trim();
+      const noWa = siswa[2] ? String(siswa[2]).trim() : "";
       playBeepSound();
 
-      if (jenisScan === 'pagi') {
-        currentClass = kelas;
-        document.getElementById('class-title').innerText = `Daftar Siswa Kelas ${kelas.toUpperCase()}`;
-        renderDaftarSiswa(kelas);
+      try {
+        let hasil;
 
-        try {
-          const res = await fetch(`${SCRIPT_URL}?action=getPresensiHariIni`);
-          const presensiHariIni = await res.json();
-          const keyMap = `${kelas.toLowerCase()}_${nama}`;
-          const dataAbsen = presensiHariIni[keyMap] || { pagi: "", pulang: "" };
+        if (jenisScan === 'pagi') {
+          currentClass = kelas;
+          document.getElementById('class-title').innerText =
+            `Daftar Siswa Kelas ${kelas.toUpperCase()}`;
 
-          if (dataAbsen.pagi) {
-            statusEl.innerText = `Anda Sudah Absen Hari Ini: ${nama}`;
-            statusEl.style.color = "#f59e0b"; // Kuning peringatan
-          } else {
-            prosesAbsenOtomatisScan(nama, noWa, kelas);
+          hasil = await prosesAbsenOtomatisScan(nama, noWa, kelas);
+          await renderDaftarSiswa(kelas, true);
+
+          if (hasil.status === "success") {
             statusEl.innerText = `Presensi BERHASIL: ${nama}`;
-            statusEl.style.color = "#10b981"; // Hijau sukses
-          }
-        } catch (e) {
-          console.error(e);
-          prosesAbsenOtomatisScan(nama, noWa, kelas);
-          statusEl.innerText = `Presensi BERHASIL: ${nama}`;
-          statusEl.style.color = "#10b981";
-        }
-
-      } else {
-        currentDhuhurClass = kelas;
-        document.getElementById('dhuhur-class-title').innerText = `Daftar Siswa Sholat Dhuhur Kelas ${kelas.toUpperCase()}`;
-        renderDaftarDhuhurSiswa(kelas);
-
-        try {
-          const res = await fetch(`${SCRIPT_URL}?action=getDhuhurHariIni`);
-          const presensiDhuhurHariIni = await res.json();
-          const keyMap = `${kelas.toLowerCase()}_${nama}`;
-          const statusDhuhur = presensiDhuhurHariIni[keyMap] || "";
-
-          if (statusDhuhur) {
-            statusEl.innerText = `Anda Sudah Absen Hari Ini: ${nama}`;
+            statusEl.style.color = "#10b981";
+          } else if (hasil.status === "duplicate") {
+            statusEl.innerText = `Sudah tercatat hari ini: ${nama}`;
             statusEl.style.color = "#f59e0b";
           } else {
-            prosesAbsenDhuhurOtomatisScan(nama, noWa, kelas);
+            statusEl.innerText = `Presensi belum dapat dikonfirmasi: ${nama}`;
+            statusEl.style.color = "#ef4444";
+          }
+
+        } else {
+          currentDhuhurClass = kelas;
+          document.getElementById('dhuhur-class-title').innerText =
+            `Daftar Siswa Sholat Dhuhur Kelas ${kelas.toUpperCase()}`;
+
+          hasil = await prosesAbsenDhuhurOtomatisScan(nama, noWa, kelas);
+          await renderDaftarDhuhurSiswa(kelas, true);
+
+          if (hasil.status === "success") {
             statusEl.innerText = `Presensi BERHASIL: ${nama} (Dhuhur)`;
             statusEl.style.color = "#10b981";
+          } else if (hasil.status === "duplicate") {
+            statusEl.innerText = `Sudah tercatat hari ini: ${nama} (Dhuhur)`;
+            statusEl.style.color = "#f59e0b";
+          } else {
+            statusEl.innerText = `Presensi Dhuhur belum dapat dikonfirmasi: ${nama}`;
+            statusEl.style.color = "#ef4444";
           }
-        } catch (e) {
-          console.error(e);
-          prosesAbsenDhuhurOtomatisScan(nama, noWa, kelas);
-          statusEl.innerText = `Presensi BERHASIL: ${nama} (Dhuhur)`;
-          statusEl.style.color = "#10b981";
         }
+      } catch (e) {
+        console.error("Kesalahan proses QR:", e);
+        statusEl.innerText = `Terjadi kesalahan saat memproses presensi ${nama}.`;
+        statusEl.style.color = "#ef4444";
       }
 
-      // Jeda cooldown 3 detik agar petugas bisa melihat teks notifikasi dengan jelas
+      // Jeda agar petugas dapat membaca hasil scan sebelum siswa berikutnya.
       setTimeout(() => {
         isScanningReady = true;
         statusEl.innerText = "Kamera aktif. Silakan siswa berikutnya...";
@@ -534,34 +530,109 @@
         audio.play();
       } catch(e) {}
     }
-    function prosesAbsenOtomatisScan(nama, noWa, kelasTarget) {
+    async function prosesAbsenOtomatisScan(nama, noWa, kelasTarget) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
       const tanggalStr = getTanggalLokal();
-      const jam = now.getHours();
-      let statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
-      if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
-      window.lokalAbsenCache[`${kelasTarget.toLowerCase()}_${nama}`] = statusFinal;
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "absen", kelas: kelasTarget, nama: nama, noWa: String(noWa), status: statusFinal, tanggal: tanggalStr, jam: jamStr })
-      }).then(() => { renderDaftarSiswa(kelasTarget, true); });
-    }
-    function prosesAbsenDhuhurOtomatisScan(nama, noWa, kelasTarget) {
-      const now = new Date();
-      const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
-      const tanggalStr = getTanggalLokal();
-      let statusVal = "Sholat";
-      if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
-      window.lokalDhuhurCache[`${kelasTarget.toLowerCase()}_${nama}`] = statusVal;
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "absenDhuhur", kelas: kelasTarget, nama: nama, noWa: String(noWa), status: statusVal, tanggal: tanggalStr, jam: jamStr })
-      }).then(() => { renderDaftarDhuhurSiswa(kelasTarget, true); });
+      const statusFinal = now.getHours() < 7
+        ? "Hadir Tepat Waktu"
+        : "Hadir Terlambat";
+      const keyMap = `${kelasTarget.toLowerCase()}_${nama}`;
+
+      if (!window.presensiPending) window.presensiPending = {};
+      if (window.presensiPending[keyMap]) {
+        return { status: "pending", message: "Presensi sedang diproses." };
+      }
+
+      window.presensiPending[keyMap] = true;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "absen",
+            kelas: kelasTarget,
+            nama: nama,
+            noWa: String(noWa),
+            status: statusFinal,
+            tanggal: tanggalStr,
+            jam: jamStr
+          })
+        });
+
+        if (!response.ok) throw new Error("Server tidak dapat memproses permintaan.");
+        const hasil = await response.json();
+
+        if (hasil.status === "success") {
+          if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
+          window.lokalAbsenCache[keyMap] = statusFinal;
+          return hasil;
+        }
+
+        if (hasil.status === "duplicate") return hasil;
+        throw new Error(hasil.message || "Server tidak memberikan konfirmasi penyimpanan.");
+
+      } catch (error) {
+        console.error("Presensi QR pagi:", error);
+        return { status: "error", message: error.message };
+      } finally {
+        delete window.presensiPending[keyMap];
+      }
     }
 
+    async function prosesAbsenDhuhurOtomatisScan(nama, noWa, kelasTarget) {
+      const now = new Date();
+      const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
+      const tanggalStr = getTanggalLokal();
+      const statusVal = "Sholat";
+      const keyMap = `${kelasTarget.toLowerCase()}_${nama}`;
+
+      if (!window.dhuhurPending) window.dhuhurPending = {};
+      if (window.dhuhurPending[keyMap]) {
+        return { status: "pending", message: "Presensi Dhuhur sedang diproses." };
+      }
+
+      window.dhuhurPending[keyMap] = true;
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "absenDhuhur",
+            kelas: kelasTarget,
+            nama: nama,
+            noWa: String(noWa),
+            status: statusVal,
+            tanggal: tanggalStr,
+            jam: jamStr
+          })
+        });
+
+        if (!response.ok) throw new Error("Server tidak dapat memproses permintaan Dhuhur.");
+        const hasil = await response.json();
+
+        if (hasil.status === "success") {
+          if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
+          window.lokalDhuhurCache[keyMap] = statusVal;
+          return hasil;
+        }
+
+        if (hasil.status === "duplicate") return hasil;
+        throw new Error(hasil.message || "Server tidak memberikan konfirmasi presensi Dhuhur.");
+
+      } catch (error) {
+        console.error("Presensi QR Dhuhur:", error);
+        return { status: "error", message: error.message };
+      } finally {
+        delete window.dhuhurPending[keyMap];
+      }
+    }
+
+    // ==========================================
+    // RENDER MANUAL PRESENSI & DHUHUR
+    // ==========================================
     // ==========================================
     // RENDER MANUAL PRESENSI & DHUHUR
     // ==========================================
@@ -744,58 +815,127 @@
     }
     async function renderDaftarDhuhurSiswa(kelas, isSilent = false) {
       const listContainer = document.getElementById('dhuhur-student-list');
-      if (!isSilent) listContainer.innerHTML = "<p style='text-align: center; color: var(--text-dim); padding: 20px 0;'>Memuat data siswa...</p>";
-      
-      const filtered = dataSiswa.filter(s => s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase());
-      if (filtered.length === 0 && !isSilent) {
-        listContainer.innerHTML = "<p style='text-align:center; color: var(--text-dim); padding: 20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
+      if (!isSilent) {
+        listContainer.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px 0;'>Memuat data siswa...</p>";
+      }
+
+      const filtered = dataSiswa.filter(s =>
+        s[0] && s[0].toString().trim().toLowerCase() === kelas.toLowerCase()
+      );
+
+      if (filtered.length === 0) {
+        if (!isSilent) {
+          listContainer.innerHTML = "<p style='text-align:center; color:var(--text-dim); padding:20px 0;'>Data siswa kelas ini tidak ditemukan.</p>";
+        }
         return;
       }
-      let presensiDhuhurHariIni = {};
+
+      let presensiDhuhurHariIni;
       try {
         const res = await fetch(`${SCRIPT_URL}?action=getDhuhurHariIni`);
+        if (!res.ok) throw new Error("Gagal mengambil data presensi Dhuhur.");
         presensiDhuhurHariIni = await res.json();
-      } catch (e) { console.error(e); }
-      
+        if (!presensiDhuhurHariIni || typeof presensiDhuhurHariIni !== "object") {
+          throw new Error("Format data presensi Dhuhur tidak valid.");
+        }
+      } catch (e) {
+        console.error("Gagal memuat presensi Dhuhur:", e);
+        if (!isSilent) {
+          listContainer.innerHTML = "<p style='text-align:center; color:#ef4444; padding:20px 0;'>Gagal memuat presensi Dhuhur. Periksa koneksi lalu coba kembali.</p>";
+        }
+        return;
+      }
+
+      if (!window.dhuhurPending) window.dhuhurPending = {};
       listContainer.innerHTML = "";
+
       filtered.forEach(siswa => {
         const nama = siswa[1] ? siswa[1].toString().trim() : "";
         const noWa = siswa[2] ? siswa[2].toString().trim() : "";
         const keyMap = `${kelas.toLowerCase()}_${nama}`;
-        
         let statusDhuhur = presensiDhuhurHariIni[keyMap] || "";
+
         if (window.lokalDhuhurCache && window.lokalDhuhurCache[keyMap] && !statusDhuhur) {
           statusDhuhur = window.lokalDhuhurCache[keyMap];
         }
+
         const card = document.createElement('div');
         card.className = 'student-card';
-        
-        let dhuhurHtml = statusDhuhur 
-          ? `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusDhuhur}</button>`
-          : `<button class="btn-action btn-absen" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Sholat', this)">Sholat</button>
-             <button class="btn-action btn-sakit" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Berhalangan', this)">Berhalangan</button>
-             <button class="btn-action btn-alpa" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Tidak Sholat', this)">Tidak Sholat</button>`;
+        let dhuhurHtml = "";
+
+        if (window.dhuhurPending[keyMap]) {
+          dhuhurHtml = `<button class="btn-action" disabled style="background:#475569; color:#fff;">Menyimpan...</button>`;
+        } else if (statusDhuhur) {
+          dhuhurHtml = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusDhuhur}</button>`;
+        } else {
+          dhuhurHtml = `
+            <button class="btn-action btn-absen" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Sholat', this)">Sholat</button>
+            <button class="btn-action btn-sakit" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Berhalangan', this)">Berhalangan</button>
+            <button class="btn-action btn-alpa" onclick="prosesAbsenDhuhur('${nama}', '${noWa}', 'Tidak Sholat', this)">Tidak Sholat</button>`;
+        }
+
         card.innerHTML = `<div class="student-name">${nama}</div><div class="action-group"><div class="action-buttons">${dhuhurHtml}</div></div>`;
         listContainer.appendChild(card);
       });
     }
-    function prosesAbsenDhuhur(nama, noWa, statusVal, btnElement) {
+
+    async function prosesAbsenDhuhur(nama, noWa, statusVal, btnElement) {
+      if (!currentDhuhurClass || !btnElement) return;
+
+      const kelasTarget = currentDhuhurClass;
+      const keyMap = `${kelasTarget.toLowerCase()}_${nama}`;
+      if (!window.dhuhurPending) window.dhuhurPending = {};
+      if (window.dhuhurPending[keyMap]) return;
+
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
       const tanggalStr = getTanggalLokal();
-      
-      if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
-      window.lokalDhuhurCache[`${currentDhuhurClass.toLowerCase()}_${nama}`] = statusVal;
-      
-      btnElement.closest('.action-buttons').innerHTML = `<button class="btn-action" disabled style="background:#334155; color:#94a3b8;">${statusVal}</button>`;
-      
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "absenDhuhur", kelas: currentDhuhurClass, nama: nama, noWa: String(noWa), status: statusVal, tanggal: tanggalStr, jam: jamStr })
-      }).then(() => { renderDaftarDhuhurSiswa(currentDhuhurClass, true); });
+      window.dhuhurPending[keyMap] = true;
+
+      const actionButtons = btnElement.closest('.action-buttons');
+      if (actionButtons) {
+        actionButtons.innerHTML = `<button class="btn-action" disabled style="background:#475569; color:#fff;">Menyimpan...</button>`;
+      }
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "absenDhuhur",
+            kelas: kelasTarget,
+            nama: nama,
+            noWa: String(noWa),
+            status: statusVal,
+            tanggal: tanggalStr,
+            jam: jamStr
+          })
+        });
+
+        if (!response.ok) throw new Error("Server tidak dapat memproses presensi Dhuhur.");
+        const hasil = await response.json();
+
+        if (hasil.status === "success") {
+          if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
+          window.lokalDhuhurCache[keyMap] = statusVal;
+          alert("Presensi Dhuhur berhasil disimpan.");
+        } else if (hasil.status === "duplicate") {
+          alert(hasil.message || "Presensi Dhuhur sudah tercatat hari ini.");
+        } else {
+          throw new Error(hasil.message || "Server belum mengonfirmasi penyimpanan.");
+        }
+      } catch (error) {
+        console.error("Kesalahan presensi Dhuhur:", error);
+        alert("Presensi Dhuhur belum dapat dikonfirmasi. Periksa koneksi dan data pada Spreadsheet.");
+      } finally {
+        delete window.dhuhurPending[keyMap];
+        await renderDaftarDhuhurSiswa(kelasTarget, true);
+      }
     }
 
+    // ==========================================
+    // UTILS & REKAP
+    // ==========================================
     // ==========================================
     // UTILS & REKAP
     // ==========================================
