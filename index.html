@@ -299,6 +299,8 @@
     let autoRefreshTimer = null;
     let autoRefreshDhuhurTimer = null;
     let currentFilteredData = [];
+    let currentFilteredKehadiran = [];
+    let currentFilteredDhuhur = [];
     
     let html5QrCodeScanner = null;
     let html5QrCodeDhuhur = null;
@@ -965,30 +967,53 @@
       if (clean.includes('T')) clean = clean.split('T')[1].substring(0, 5);
       return clean.includes('WIB') ? clean : clean + " WIB";
     }
-    function loadRekapData() {
+    async function loadRekapData() {
       const kelas = document.getElementById('rekap-kelas').value;
       const tipe = document.getElementById('rekap-tipe').value;
       const namaSiswa = document.getElementById('rekap-siswa').value;
       const tglAwal = document.getElementById('rekap-tgl-awal').value;
       const tglAkhir = document.getElementById('rekap-tgl-akhir').value;
-      if (!tglAwal || !tglAkhir) { alert("Pilih rentang tanggal terlebih dahulu."); return; }
-      
-      fetch(`${SCRIPT_URL}?action=getRekap`).then(res => res.json()).then(data => {
+      const btnPrint = document.getElementById('btn-print');
+      const btnWA = document.getElementById('btn-send-wa');
+
+      if (!tglAwal || !tglAkhir || tglAwal > tglAkhir) {
+        alert("Pilih rentang tanggal yang valid terlebih dahulu.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=getRekap`);
+        if (!response.ok) throw new Error(`Server merespons HTTP ${response.status}.`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Format data rekap tidak valid.");
+
         let filtered = data.filter(d => {
-          let rowDate = d[0]; if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
-          return d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase() && rowDate >= tglAwal && rowDate <= tglAkhir;
+          let rowDate = d[0] ? String(d[0]) : "";
+          if (rowDate.includes('T')) rowDate = rowDate.split('T')[0];
+          return d[2] && String(d[2]).trim().toLowerCase() === kelas.toLowerCase() &&
+            rowDate >= tglAwal && rowDate <= tglAkhir;
         });
-        if (tipe === 'individu') filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
+        if (tipe === 'individu') {
+          filtered = filtered.filter(d => d[3] && String(d[3]).trim().toLowerCase() === namaSiswa.trim().toLowerCase());
+        }
+
         currentFilteredData = filtered;
+        currentFilteredKehadiran = filtered;
         document.getElementById('rekap-result-card').classList.add('result-card-active');
         document.getElementById('print-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
         document.getElementById('print-subheader-rentang').innerText = `Periode: ${tglAwal} s/d ${tglAkhir}`;
-        document.getElementById('btn-print').disabled = false;
-        document.getElementById('btn-send-wa').disabled = false;
-        
+        btnPrint.disabled = false;
+        btnWA.disabled = filtered.length === 0;
+
         if (tipe === 'kelas') renderRekapAkumulasiKelas(filtered, kelas);
         else renderRekapIndividu(filtered);
-      });
+      } catch (error) {
+        console.error("Gagal memuat rekap kehadiran:", error);
+        currentFilteredKehadiran = [];
+        btnPrint.disabled = true;
+        btnWA.disabled = true;
+        alert("Gagal mengambil data rekap kehadiran. Periksa koneksi dan coba kembali. " + error.message);
+      }
     }
     function renderRekapAkumulasiKelas(data, kelas) {
       const wrapper = document.getElementById('rekap-table-wrapper');
@@ -1057,30 +1082,53 @@
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
-    function loadRekapDhuhurData() {
+    async function loadRekapDhuhurData() {
       const kelas = document.getElementById('rekap-dhuhur-kelas').value;
       const tipe = document.getElementById('rekap-dhuhur-tipe').value;
       const namaSiswa = document.getElementById('rekap-dhuhur-siswa').value;
       const tglAwal = document.getElementById('rekap-dhuhur-tgl-awal').value;
       const tglAkhir = document.getElementById('rekap-dhuhur-tgl-akhir').value;
-      if (!tglAwal || !tglAkhir) { alert("Pilih rentang tanggal terlebih dahulu."); return; }
-      
-      fetch(`${SCRIPT_URL}?action=getRekapDhuhur`).then(res => res.json()).then(data => {
+      const btnPrint = document.getElementById('btn-print-dhuhur');
+      const btnWA = document.getElementById('btn-send-wa-dhuhur');
+
+      if (!tglAwal || !tglAkhir || tglAwal > tglAkhir) {
+        alert("Pilih rentang tanggal yang valid terlebih dahulu.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=getRekapDhuhur`);
+        if (!response.ok) throw new Error(`Server merespons HTTP ${response.status}.`);
+        const data = await response.json();
+        if (!Array.isArray(data)) throw new Error("Format data rekap Dhuhur tidak valid.");
+
         let filtered = data.filter(d => {
-          let rowDate = d[0]; if (rowDate && rowDate.includes('T')) rowDate = rowDate.split('T')[0];
-          return d[2] && d[2].toString().toLowerCase() === kelas.toLowerCase() && rowDate >= tglAwal && rowDate <= tglAkhir;
+          let rowDate = d[0] ? String(d[0]) : "";
+          if (rowDate.includes('T')) rowDate = rowDate.split('T')[0];
+          return d[2] && String(d[2]).trim().toLowerCase() === kelas.toLowerCase() &&
+            rowDate >= tglAwal && rowDate <= tglAkhir;
         });
-        if (tipe === 'individu') filtered = filtered.filter(d => d[3] && d[3].toString().trim().toLowerCase() === namaSiswa.trim().toLowerCase());
+        if (tipe === 'individu') {
+          filtered = filtered.filter(d => d[3] && String(d[3]).trim().toLowerCase() === namaSiswa.trim().toLowerCase());
+        }
+
         currentFilteredData = filtered;
+        currentFilteredDhuhur = filtered;
         document.getElementById('rekap-dhuhur-result-card').classList.add('result-card-active');
         document.getElementById('print-dhuhur-subheader-kelas').innerText = `Kelas: ${kelas.toUpperCase()}` + (tipe === 'individu' ? ` - ${namaSiswa}` : '');
         document.getElementById('print-dhuhur-subheader-rentang').innerText = `Periode: ${tglAwal} s/d ${tglAkhir}`;
-        document.getElementById('btn-print-dhuhur').disabled = false;
-        document.getElementById('btn-send-wa-dhuhur').disabled = false;
-        
+        btnPrint.disabled = false;
+        btnWA.disabled = filtered.length === 0;
+
         if (tipe === 'kelas') renderRekapDhuhurAkumulasi(filtered, kelas);
         else renderRekapDhuhurIndividu(filtered);
-      });
+      } catch (error) {
+        console.error("Gagal memuat rekap Dhuhur:", error);
+        currentFilteredDhuhur = [];
+        btnPrint.disabled = true;
+        btnWA.disabled = true;
+        alert("Gagal mengambil data rekap Sholat Dhuhur. Periksa koneksi dan coba kembali. " + error.message);
+      }
     }
     function renderRekapDhuhurAkumulasi(data, kelas) {
       const wrapper = document.getElementById('rekap-dhuhur-table-wrapper');
@@ -1128,23 +1176,64 @@
       html += `</tbody></table>`;
       wrapper.innerHTML = html;
     }
-    function kirimRekapMassalPdf(kategori = "Kehadiran") {
+    async function kirimRekapMassalPdf(kategori = "Kehadiran") {
       const isDhuhur = kategori === "Dhuhur";
       const kelas = document.getElementById(isDhuhur ? 'rekap-dhuhur-kelas' : 'rekap-kelas').value;
       const tipe = document.getElementById(isDhuhur ? 'rekap-dhuhur-tipe' : 'rekap-tipe').value;
       const namaSiswa = document.getElementById(isDhuhur ? 'rekap-dhuhur-siswa' : 'rekap-siswa').value;
-      
-      if (!currentFilteredData || currentFilteredData.length === 0) { alert("Tidak ada data untuk dikirim."); return; }
-      if (!confirm(`Kirim file PDF ${kategori} ke WhatsApp wali murid?`)) return;
-      
-      const cardEl = document.getElementById(isDhuhur ? 'rekap-dhuhur-result-card' : 'rekap-result-card');
-      const fullHTMLForPdf = `<html><head><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;margin-top:15px;}th,td{border:1px solid #000;padding:6px;font-size:11px;text-align:left;}th{background-color:#f1f5f9;}</style></head><body>${cardEl.querySelector('.print-header').outerHTML}${document.getElementById(isDhuhur ? 'rekap-dhuhur-summary-stat' : 'rekap-summary-stat').outerHTML}${document.getElementById(isDhuhur ? 'rekap-dhuhur-table-wrapper' : 'rekap-table-wrapper').innerHTML}</body></html>`;
-      
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "kirimRekapMassalPdf", kelas, tipe, namaSiswa, kategori, htmlContent: fullHTMLForPdf })
-      }).then(res => res.json()).then(res => alert(res.message || "Selesai.")).catch(err => alert("Gagal: " + err));
+      const tglAwal = document.getElementById(isDhuhur ? 'rekap-dhuhur-tgl-awal' : 'rekap-tgl-awal').value;
+      const tglAkhir = document.getElementById(isDhuhur ? 'rekap-dhuhur-tgl-akhir' : 'rekap-tgl-akhir').value;
+      const dataTerpilih = isDhuhur ? currentFilteredDhuhur : currentFilteredKehadiran;
+      const tombol = document.getElementById(isDhuhur ? 'btn-send-wa-dhuhur' : 'btn-send-wa');
+
+      if (!tglAwal || !tglAkhir || tglAwal > tglAkhir) {
+        alert("Pilih rentang tanggal yang valid terlebih dahulu.");
+        return;
+      }
+      if (tipe === 'individu' && !namaSiswa) {
+        alert("Pilih siswa yang akan dibuatkan laporan.");
+        return;
+      }
+      if (!dataTerpilih || dataTerpilih.length === 0) {
+        alert("Tidak ada data pada hasil rekap. Muat rekap terlebih dahulu.");
+        return;
+      }
+      if (!confirm(`Kirim PDF rekap ${kategori} melalui WhatsApp? Untuk rekap kelas, setiap wali murid hanya menerima laporan anaknya sendiri.`)) return;
+
+      const teksAsli = tombol.innerText;
+      tombol.disabled = true;
+      tombol.innerText = "Memproses...";
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "kirimRekapMassalPdf",
+            kelas,
+            tipe,
+            namaSiswa,
+            kategori,
+            tglAwal,
+            tglAkhir
+          })
+        });
+
+        if (!response.ok) throw new Error(`Server merespons HTTP ${response.status}.`);
+        const hasil = await response.json();
+
+        if (hasil.status === "success" || hasil.status === "partial") {
+          alert(hasil.message || "Proses pengiriman selesai.");
+        } else {
+          throw new Error(hasil.message || "Server tidak berhasil memproses laporan.");
+        }
+      } catch (error) {
+        console.error("Gagal mengirim rekap WhatsApp:", error);
+        alert("Pengiriman rekap gagal atau belum dapat dikonfirmasi: " + error.message);
+      } finally {
+        tombol.disabled = false;
+        tombol.innerText = teksAsli;
+      }
     }
   </script>
 </body>
