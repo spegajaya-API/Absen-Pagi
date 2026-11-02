@@ -313,6 +313,15 @@
         .catch(err => console.error("Gagal memuat data siswa:", err));
     });
 
+  // Mengambil tanggal lokal perangkat (WIB), tanpa konversi ke UTC.
+  function getTanggalLokal() {
+      const now = new Date();
+      const tahun = now.getFullYear();
+      const bulan = String(now.getMonth() + 1).padStart(2, '0');
+      const tanggal = String(now.getDate()).padStart(2, '0');
+      return `${tahun}-${bulan}-${tanggal}`;
+  }
+
     function switchTab(viewId, btn) {
       if (isPagiScanning && html5QrCodeScanner) {
         toggleScanner('pagi', false);
@@ -528,7 +537,7 @@
     function prosesAbsenOtomatisScan(nama, noWa, kelasTarget) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
-      const tanggalStr = now.toISOString().split('T')[0];
+      const tanggalStr = getTanggalLokal();
       const jam = now.getHours();
       let statusFinal = (jam < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat";
       if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
@@ -542,7 +551,7 @@
     function prosesAbsenDhuhurOtomatisScan(nama, noWa, kelasTarget) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
-      const tanggalStr = now.toISOString().split('T')[0];
+      const tanggalStr = getTanggalLokal();
       let statusVal = "Sholat";
       if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
       window.lokalDhuhurCache[`${kelasTarget.toLowerCase()}_${nama}`] = statusVal;
@@ -619,7 +628,7 @@
     function prosesAbsen(nama, noWa, tipe, btnElement) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
-      const tanggalStr = now.toISOString().split('T')[0];
+      const tanggalStr = getTanggalLokal();
       let statusFinal = tipe === 'absen' ? ((now.getHours() < 7) ? "Hadir Tepat Waktu" : "Hadir Terlambat") : tipe;
       
       if (!window.lokalAbsenCache) window.lokalAbsenCache = {};
@@ -637,7 +646,7 @@
       if (!confirm(`Tandai siswa ${nama} sebagai BOLOS?`)) return;
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
-      const tanggalStr = now.toISOString().split('T')[0];
+      const tanggalStr = getTanggalLokal();
       
       if (!window.lokalPulangCache) window.lokalPulangCache = {};
       window.lokalPulangCache[`${currentClass.toLowerCase()}_${nama}`] = "Bolos";
@@ -701,7 +710,7 @@
     function prosesAbsenDhuhur(nama, noWa, statusVal, btnElement) {
       const now = new Date();
       const jamStr = now.toTimeString().split(' ')[0].substring(0, 5);
-      const tanggalStr = now.toISOString().split('T')[0];
+      const tanggalStr = getTanggalLokal();
       
       if (!window.lokalDhuhurCache) window.lokalDhuhurCache = {};
       window.lokalDhuhurCache[`${currentDhuhurClass.toLowerCase()}_${nama}`] = statusVal;
